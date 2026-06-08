@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrintManager Pro</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#18191c;--bg2:#1e2023;--surf:#242629;--surf2:#2c2f33;--surf3:#313438;
+  --brd:#3a3d42;--brd2:#46494f;
+  --ink:#e8eaed;--ink2:#b0b5bf;--ink3:#6e747d;
+  --blue:#3b82f6;--blue-d:#2563eb;--blue-l:rgba(59,130,246,.12);--blue-m:rgba(59,130,246,.3);
+  --green:#22c55e;--green-l:rgba(34,197,94,.12);
+  --red:#ef4444;--red-l:rgba(239,68,68,.12);
+  --orange:#f59e0b;--orange-l:rgba(245,158,11,.12);
+  --violet:#a78bfa;--violet-l:rgba(167,139,250,.12);
+  --cyan:#22d3ee;--cyan-l:rgba(34,211,238,.12);
+  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+  --r:10px;--rsm:7px;--max:960px;
+  --shad:0 1px 3px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35);
+}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;}
+::selection{background:var(--blue-m);color:#fff;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px;}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 40% 35%,#1a2d50 0%,#13141a 65%);padding:20px;}
+.login-box{background:var(--surf);border:1px solid var(--brd);border-radius:16px;
+  padding:40px 36px;width:100%;max-width:400px;box-shadow:0 32px 80px rgba(0,0,0,.7);}
+.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:28px;}
+.login-icon{width:42px;height:42px;background:var(--blue);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(59,130,246,.4);}
+.login-brand h1{font-size:18px;font-weight:800;color:var(--ink);}
+.login-brand p{font-size:11px;color:var(--ink3);margin-top:1px;}
+.login-h{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:3px;}
+.login-sub{font-size:13px;color:var(--ink3);margin-bottom:22px;}
+.user-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.ucard{border:1.5px solid var(--brd);border-radius:var(--r);padding:13px 8px;
+  text-align:center;cursor:pointer;transition:all .15s;background:var(--surf2);}
+.ucard:hover{border-color:var(--blue);background:var(--blue-l);}
+.ucard.sel{border-color:var(--blue);background:var(--blue-l);box-shadow:0 0 0 3px rgba(59,130,246,.2);}
+.ucard.owner.sel{border-color:var(--violet);background:var(--violet-l);box-shadow:0 0 0 3px rgba(167,139,250,.2);}
+.uav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:13px;font-weight:700;margin:0 auto 6px;}
+.av-a{background:rgba(59,130,246,.2);color:var(--blue);}
+.av-o{background:rgba(167,139,250,.2);color:var(--violet);}
+.ucname{font-size:12px;font-weight:700;color:var(--ink);}
+.ucrole{font-size:10px;color:var(--ink3);margin-top:1px;}
+.lerr{background:var(--red-l);border:1px solid rgba(239,68,68,.25);color:#fca5a5;
+  font-size:13px;padding:9px 12px;border-radius:var(--rsm);margin-bottom:12px;display:none;}
+.lf{margin-bottom:13px;}
+.lf label{display:block;font-size:11px;font-weight:700;color:var(--ink3);
+  margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
+.lf input{width:100%;padding:10px 13px;border:1.5px solid var(--brd2);border-radius:var(--rsm);
+  font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surf2);
+  outline:none;transition:all .15s;}
+.lf input:focus{border-color:var(--blue);background:var(--surf3);}
+.lbtn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--rsm);
+  font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;
+  margin-top:4px;box-shadow:0 4px 14px rgba(59,130,246,.35);}
+.lbtn:hover{background:var(--blue-d);transform:translateY(-1px);}
+
+/* APP */
+.app{display:none;min-height:100vh;flex-direction:column;background:var(--bg);}
+.app.on{display:flex;}
+.topbar{background:var(--surf);border-bottom:1px solid var(--brd);height:54px;flex-shrink:0;}
+.topbar-inner{max-width:var(--max);margin:0 auto;height:100%;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;}
+.tb-brand{display:flex;align-items:center;gap:10px;}
+.tb-logo{width:30px;height:30px;background:var(--blue);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(59,130,246,.4);}
+.tb-brand h1{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.upill{display:flex;align-items:center;gap:8px;background:var(--surf2);border:1px solid var(--brd);
+  border-radius:20px;padding:4px 13px 4px 5px;}
+.upip{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;}
+.pip-a{background:rgba(59,130,246,.2);color:var(--blue);}
+.pip-o{background:rgba(167,139,250,.2);color:var(--violet);}
+.upill-name{font-size:12px;font-weight:600;color:var(--ink);}
+.upill-role{font-size:10px;color:var(--ink3);}
+.lout-btn{background:transparent;border:1px solid var(--brd2);color:var(--ink3);
+  padding:5px 13px;border-radius:20px;cursor:pointer;font-family:var(--sans);
+  font-size:11px;font-weight:500;transition:all .15s;}
+.lout-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
+/* SYNC BADGE */
+.sync-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+  font-size:11px;font-weight:600;border:1px solid var(--brd2);cursor:default;transition:all .3s;}
+.sync-idle{background:var(--surf2);color:var(--ink3);border-color:var(--brd2);}
+.sync-saving{background:rgba(245,158,11,.12);color:var(--orange);border-color:rgba(245,158,11,.3);animation:pulse 1.2s infinite;}
+.sync-ok{background:rgba(34,197,94,.12);color:var(--green);border-color:rgba(34,197,94,.3);}
+.sync-err{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.3);cursor:pointer;}
+.sync-loading{background:rgba(59,130,246,.12);color:var(--blue);border-color:rgba(59,130,246,.3);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+.nav-wrap{background:var(--surf);border-bottom:1px solid var(--brd);flex-shrink:0;}
+.nav{max-width:var(--max);margin:0 auto;display:flex;padding:0 16px;overflow-x:auto;scrollbar-width:none;}
+.nav::-webkit-scrollbar{display:none;}
+.nbtn{padding:13px 15px;border:none;background:transparent;cursor:pointer;font-family:var(--sans);
+  font-size:13px;font-weight:500;color:var(--ink3);white-space:nowrap;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.nbtn:hover{color:var(--ink);}
+.nbtn.act{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
+.owner-only{display:none;}
+.main{flex:1;overflow-y:auto;padding:22px 16px;}
+.inner{max-width:var(--max);margin:0 auto;}
+.page{display:none;}.page.on{display:block;}
+
+/* CARDS */
+.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
+  padding:20px;margin-bottom:14px;box-shadow:var(--shad);}
+.chdr{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.stat-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
+  padding:16px;box-shadow:var(--shad);}
+.slbl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;
+  letter-spacing:.6px;margin-bottom:6px;}
+.sval{font-size:18px;font-weight:700;font-family:var(--mono);}
+.sv-g{color:var(--green);}.sv-r{color:var(--red);}.sv-b{color:var(--blue);}.sv-o{color:var(--orange);}
+
+/* FORMS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--ink3);
+  margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;border:1px solid var(--brd2);
+  border-radius:var(--rsm);font-family:var(--sans);font-size:13px;color:var(--ink);
+  background:var(--surf2);outline:none;transition:all .15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);background:var(--surf3);}
+.fg select option{background:var(--surf2);}
+.fg textarea{resize:vertical;min-height:60px;line-height:1.5;}
+
+/* BUTTONS */
+.btn{padding:9px 16px;border-radius:var(--rsm);border:none;cursor:pointer;font-family:var(--sans);
+  font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+  transition:all .15s;white-space:nowrap;}
+.btn-p{background:var(--surf3);color:var(--ink);border:1px solid var(--brd2);}
+.btn-p:hover{background:var(--brd2);}
+.btn-b{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3);}
+.btn-b:hover{background:var(--blue-d);}
+.btn-g{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.btn-g:hover{background:rgba(34,197,94,.25);}
+.btn-o{background:transparent;color:var(--ink2);border:1px solid var(--brd2);}
+.btn-o:hover{background:var(--surf3);color:var(--ink);}
+.btn-r{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2);
+  padding:5px 10px;font-size:11px;}
+.btn-r:hover{background:rgba(239,68,68,.25);}
+.btn-orange{background:rgba(245,158,11,.15);color:var(--orange);border:1px solid rgba(245,158,11,.25);
+  padding:5px 10px;font-size:11px;}
+.btn-orange:hover{background:rgba(245,158,11,.25);}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
+
+/* TAGS */
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.3px;}
+.t-asli{background:rgba(34,197,94,.15);color:var(--green);}
+.t-fiktif{background:rgba(245,158,11,.15);color:var(--orange);}
+.t-fisik{background:rgba(59,130,246,.15);color:var(--blue);}
+.t-ops{background:rgba(245,158,11,.15);color:var(--orange);}
+.t-log{background:rgba(167,139,250,.15);color:var(--violet);}
+.t-backup{background:var(--cyan-l);color:var(--cyan);}
+
+/* ALERTS */
+.alert-i{background:var(--blue-l);border:1px solid var(--blue-m);color:#93c5fd;
+  padding:10px 13px;border-radius:var(--rsm);font-size:12px;margin-bottom:12px;}
+
+/* LIST ROWS */
+.li-row{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 0;border-bottom:1px solid var(--brd);}
+.li-row:last-child{border-bottom:none;}
+.li-l{display:flex;align-items:center;gap:11px;}
+.ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:15px;flex-shrink:0;}
+.ico-g{background:rgba(34,197,94,.15);}
+.ico-r{background:rgba(239,68,68,.15);}
+.ico-b{background:rgba(59,130,246,.15);}
+.ico-o{background:rgba(245,158,11,.15);}
+.ico-v{background:rgba(167,139,250,.15);}
+.ico-c{background:var(--cyan-l);}
+.liname{font-size:13px;font-weight:500;color:var(--ink);}
+.limeta{font-size:11px;color:var(--ink3);margin-top:2px;}
+.liamt{font-size:13px;font-weight:700;font-family:var(--mono);}
+.liamt.pos{color:var(--green);}.liamt.neg{color:var(--red);}
+.empty{text-align:center;padding:36px;color:var(--ink3);font-size:13px;}
+
+/* ITEMS TABLE */
+.itable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
+.itable th{background:var(--surf2);padding:8px 10px;text-align:left;font-size:11px;
+  font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;
+  border:1px solid var(--brd);}
+.itable td{padding:5px 7px;border:1px solid var(--brd);background:var(--surf);}
+.itable tr:hover td{background:var(--surf2);}
+.itable td input{width:100%;border:none;background:transparent;font-family:var(--sans);
+  font-size:13px;color:var(--ink);outline:none;padding:2px 3px;}
+.itable td input:focus{background:var(--blue-l);border-radius:3px;}
+.td-no{width:34px;text-align:center;color:var(--ink3);font-size:12px;font-weight:600;}
+.td-qty{width:80px;}.td-hp{width:140px;}
+.td-sub{width:140px;font-family:var(--mono);font-size:12px;color:var(--ink2);
+  text-align:right;padding-right:10px!important;}
+.td-del{width:34px;text-align:center;}
+.del-btn{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:18px;line-height:1;transition:color .15s;}
+.del-btn:hover{color:var(--red);}
+.add-row{font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue-m);
+  border-radius:var(--rsm);padding:7px 14px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:all .15s;}
+.add-row:hover{background:var(--blue-l);}
+.total-box{background:var(--surf2);border-radius:var(--rsm);padding:12px 16px;
+  display:flex;justify-content:space-between;align-items:center;border:1px solid var(--brd);margin-top:10px;}
+.total-lbl{font-size:13px;color:var(--ink3);}
+.total-val{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--ink);}
+
+/* P&L */
+.pl-sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--ink3);padding-bottom:6px;border-bottom:1px solid var(--brd);margin-bottom:8px;margin-top:14px;}
+.pl-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;}
+.pl-row .pv{font-family:var(--mono);font-weight:600;}
+.pl-sub-row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;
+  padding:8px 0;border-top:1px solid var(--brd);margin-top:4px;}
+.pl-sub-row .pv{font-family:var(--mono);}
+.pl-net-row{display:flex;justify-content:space-between;font-size:18px;font-weight:800;
+  padding:14px 0;border-top:2px solid var(--brd2);}
+.pl-net-row .pv{font-family:var(--mono);}
+
+/* LOG */
+.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--brd);}
+.log-entry:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.ld-login{background:var(--violet);}
+.ld-logout{background:var(--ink3);}
+.ld-hapus{background:var(--red);}
+.ld-modal{background:var(--blue);}
+.ld-pl{background:var(--orange);}
+.ld-masuk{background:var(--green);}
+.ld-backup{background:var(--cyan);}
+.log-main{flex:1;}
+.log-msg{font-size:13px;color:var(--ink);line-height:1.5;}
+.log-sub{font-size:11px;color:var(--ink3);margin-top:3px;}
+.log-who{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:4px;}
+.who-Admin{background:rgba(59,130,246,.2);color:var(--blue);}
+.who-Agus{background:rgba(167,139,250,.2);color:var(--violet);}
+.who-Arko{background:rgba(34,211,238,.2);color:var(--cyan);}
+.who-System{background:var(--surf3);color:var(--ink3);}
+
+/* BACKUP */
+.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.backup-item{background:var(--surf2);border:1px solid var(--brd);border-radius:var(--r);padding:16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.backup-item-hdr{display:flex;align-items:center;gap:10px;}
+.backup-item-title{font-size:13px;font-weight:600;color:var(--ink);}
+.backup-item-desc{font-size:11px;color:var(--ink3);margin-top:2px;}
+.backup-item-actions{display:flex;gap:6px;flex-shrink:0;}
+.restore-input{display:none;}
+.bk-divider{border:none;border-top:1px solid var(--brd);margin:18px 0;}
+
+/* RECEIPT — light theme always for printing */
+.rc-outer{background:#fff;border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;margin-top:14px;color:#111;}
+.rc-body{padding:32px 36px;font-family:'Plus Jakarta Sans',sans-serif;color:#111;}
+.rc-company-name{font-size:18px;font-weight:800;color:#111;}
+.rc-company-detail{font-size:12px;color:#555;line-height:1.8;margin-top:3px;}
+.rc-divider{border:none;border-top:1.5px solid #d1d5db;margin:14px 0;}
+.rc-title-line{text-align:center;margin:10px 0 16px;}
+.rc-title{font-size:17px;font-weight:800;letter-spacing:1.5px;color:#111;}
+.rc-fiktif-sys{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;letter-spacing:1px;vertical-align:middle;}
+.rc-two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;}
+.rc-sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#888;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;}
+.rc-info-row{font-size:12.5px;color:#111;line-height:1.9;}
+.rc-info-label{color:#555;}
+.rc-sub-title{font-size:12px;font-weight:700;color:#111;margin:14px 0 7px;text-transform:uppercase;letter-spacing:.4px;text-decoration:underline;}
+.rc-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px;}
+.rc-table th{background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;font-size:11px;font-weight:700;color:#111;}
+.rc-table th.rnum{text-align:right;}
+.rc-table td{padding:7px 10px;border:1px solid #d1d5db;color:#111;}
+.rc-table td.rnum{text-align:right;font-family:var(--mono);font-size:12px;}
+.rc-table tbody tr:nth-child(even){background:#f9fafb;}
+.rc-table tfoot td{font-weight:700;font-size:13px;background:#f3f4f6;}
+.rc-table tfoot td.rnum{font-family:var(--mono);}
+.rc-bottom{display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px;}
+.rc-catatan-title{font-size:11px;font-weight:700;color:#111;margin-bottom:4px;text-decoration:underline;}
+.rc-catatan-text{font-size:12px;color:#555;max-width:260px;}
+.rc-ttd{text-align:center;}
+.rc-ttd-place{font-size:12px;color:#555;margin-bottom:32px;}
+.rc-ttd-line{border-top:1px solid #111;width:170px;margin:0 auto 4px;}
+.rc-ttd-lbl{font-size:11px;color:#555;}
+.rc-thanks{text-align:center;font-style:italic;font-size:12px;color:#888;margin-top:20px;padding-top:14px;border-top:1px dashed #d1d5db;}
+
+@media print{
+  .no-print{display:none!important;}
+  body{background:#fff!important;}
+  .main{padding:0!important;}
+  .inner{max-width:100%!important;}
+  .rc-outer{border:none!important;border-radius:0!important;margin:0!important;}
+  .rc-body{padding:20px!important;}
+  @page{margin:10mm;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="login-wrap">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="login-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+      </div>
+      <div><h1>PrintManager Pro</h1><p>Sistem Manajemen Percetakan</p></div>
+    </div>
+    <div class="login-h">Masuk ke Sistem</div>
+    <div class="login-sub">Pilih akun lalu masukkan password</div>
+    <div class="user-grid">
+      <div class="ucard" id="uc-admin" onclick="pickUser('admin')">
+        <div class="uav av-a">AD</div><div class="ucname">Admin</div>
+      </div>
+      <div class="ucard owner" id="uc-agus" onclick="pickUser('agus')">
+        <div class="uav av-o">AG</div><div class="ucname">Agus</div>
+      </div>
+      <div class="ucard owner" id="uc-arko" onclick="pickUser('arko')">
+        <div class="uav av-o">AR</div><div class="ucname">Arko</div>
+      </div>
+    </div>
+    <div class="lerr" id="lerr"></div>
+    <div class="lf">
+      <label>Password</label>
+      <input type="password" id="lpass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="lbtn" onclick="doLogin()">Masuk →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar no-print">
+    <div class="topbar-inner">
+      <div class="tb-brand">
+        <div class="tb-logo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        </div>
+        <h1>PrintManager Pro</h1>
+      </div>
+      <div class="tb-right">
+        <div class="sync-badge sync-idle" id="sync-badge" title="Status sinkronisasi Gist">☁️ Siap</div>
+        <button class="lout-btn" id="sync-manual-btn" onclick="manualSync()" title="Sync ulang dari Gist" style="display:none;">🔄</button>
+        <div class="upill">
+          <div class="upip" id="tb-pip"></div>
+          <div><div class="upill-name" id="tb-name"></div><div class="upill-role" id="tb-role"></div></div>
+        </div>
+        <button class="lout-btn" onclick="doLogout()">Keluar</button>
+      </div>
+    </div>
+  </div>
+  <div class="nav-wrap no-print">
+    <div class="nav">
+      <button class="nbtn act" onclick="goPage('dashboard')">Dashboard</button>
+      <button class="nbtn" onclick="goPage('kuitansi')">Buat Kuitansi</button>
+      <button class="nbtn owner-only" onclick="goPage('modal')">Catat Modal</button>
+      <button class="nbtn owner-only" onclick="goPage('pl')">Untung &amp; Rugi</button>
+      <button class="nbtn" onclick="goPage('riwayat')">Riwayat</button>
+      <button class="nbtn owner-only" onclick="goPage('log')">Log Aktivitas</button>
+      <button class="nbtn owner-only" onclick="goPage('backup')">Backup &amp; Restore</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="inner">
+
+      <!-- DASHBOARD -->
+      <div id="page-dashboard" class="page on">
+        <div class="stats">
+          <div class="stat-card"><div class="slbl">Pemasukan (Asli)</div><div class="sval sv-g" id="s-masuk">Rp 0</div></div>
+          <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="s-keluar">Rp 0</div></div>
+          <div class="stat-card"><div class="slbl">Saldo Bersih</div><div class="sval sv-b" id="s-saldo">Rp 0</div></div>
+          <div class="stat-card"><div class="slbl">Order Bulan Ini</div><div class="sval sv-o" id="s-order">0</div></div>
+        </div>
+        <div class="card"><div class="chdr">Transaksi Terbaru</div><div id="db-recent"><div class="empty">Belum ada transaksi</div></div></div>
+      </div>
+
+      <!-- KUITANSI -->
+      <div id="page-kuitansi" class="page">
+        <div class="card no-print">
+          <div class="chdr">Tipe Kuitansi</div>
+          <div class="fg"><label>Jenis</label>
+            <select id="q-tipe" onchange="onTipeChange()">
+              <option value="asli">Kuitansi Asli — Transaksi Nyata</option>
+              <option value="fiktif">Kuitansi Fiktif — Keperluan Administrasi</option>
+            </select>
+          </div>
+          <div id="fiktif-note" class="alert-i" style="display:none;">
+            Kuitansi ini akan ditandai <strong>FIKTIF</strong> di sistem. Tidak ada tanda khusus di cetakan fisik.
+          </div>
+        </div>
+        <div class="card no-print">
+          <div class="chdr">Identitas Percetakan</div>
+          <div class="g2">
+            <div class="fg"><label>Nama Percetakan</label><input type="text" id="q-namapt" value="PERCETAKAN XYZ"></div>
+            <div class="fg"><label>Kontak</label><input type="text" id="q-kontakpt" value="08xxxxxxxxxx"></div>
+          </div>
+          <div class="fg"><label>Alamat</label><input type="text" id="q-alamatpt" value="Jl. Contoh No. 123, Banjar"></div>
+        </div>
+        <div class="card no-print">
+          <div class="chdr">Detail Kuitansi &amp; Pelanggan</div>
+          <div class="g3">
+            <div class="fg"><label>Nomor Kuitansi</label><input type="text" id="q-no" placeholder="KWT-05-001"></div>
+            <div class="fg"><label>Tanggal</label><input type="date" id="q-tgl"></div>
+            <div class="fg"><label>Status</label>
+              <select id="q-status"><option>LUNAS</option><option>BELUM LUNAS</option><option>DP</option></select>
+            </div>
+          </div>
+          <div class="g2">
+            <div class="fg"><label>Nama Pelanggan</label><input type="text" id="q-pelanggan" placeholder="Nama customer / instansi"></div>
+            <div class="fg"><label>Alamat Pelanggan</label><input type="text" id="q-alamatpl" placeholder="Kota / Alamat"></div>
+          </div>
+        </div>
+        <div class="card no-print">
+          <div class="chdr">Rincian Item</div>
+          <table class="itable">
+            <thead><tr>
+              <th class="td-no">No</th><th>Deskripsi</th>
+              <th class="td-qty">Qty</th><th class="td-hp">Harga Satuan</th>
+              <th class="td-sub">Subtotal</th><th class="td-del"></th>
+            </tr></thead>
+            <tbody id="items-body"></tbody>
+          </table>
+          <button class="add-row" onclick="addRow()">+ Tambah Item</button>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+            <div class="fg" style="width:220px;margin:0;"><label>Diskon (Rp)</label>
+              <input type="number" id="q-diskon" value="0" oninput="recalc()" style="text-align:right;">
+            </div>
+          </div>
+          <div class="total-box">
+            <span class="total-lbl">Total Bayar</span>
+            <span class="total-val" id="q-total">Rp 0</span>
+          </div>
+        </div>
+        <div class="card no-print">
+          <div class="chdr">Catatan</div>
+          <div class="fg"><textarea id="q-catatan">Barang yang sudah diambil tidak dapat dikembalikan lagi.</textarea></div>
+        </div>
+        <div class="acts no-print">
+          <button class="btn btn-o" onclick="resetKuitansi()">Reset</button>
+          <button class="btn btn-p" onclick="previewKuitansi()">👁 Preview</button>
+          <button class="btn btn-b" onclick="simpanKuitansi()">💾 Simpan</button>
+        </div>
+        <div id="rc-container" style="display:none;"></div>
+        <div id="print-acts" class="acts no-print" style="display:none;">
+          <button class="btn btn-o" onclick="window.print()">🖨️ Cetak / PDF</button>
+        </div>
+      </div>
+
+      <!-- MODAL -->
+      <div id="page-modal" class="page">
+        <div class="card">
+          <div class="chdr">Catat Pengeluaran Modal</div>
+          <div class="g2">
+            <div class="fg"><label>Jenis Modal</label>
+              <select id="m-jenis">
+                <option value="fisik">Modal Fisik (Mesin, Alat, Bahan Baku)</option>
+                <option value="operasional">Modal Operasional (Listrik, Sewa, Gaji)</option>
+              </select>
+            </div>
+            <div class="fg"><label>Tanggal</label><input type="date" id="m-tgl"></div>
+          </div>
+          <div class="g2">
+            <div class="fg"><label>Nama Pengeluaran</label><input type="text" id="m-nama" placeholder="Tinta, Listrik, Bahan baku..."></div>
+            <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="m-jml" placeholder="0"></div>
+          </div>
+          <div class="fg"><label>Keterangan</label><textarea id="m-ket" style="min-height:46px;" placeholder="Catatan tambahan..."></textarea></div>
+          <div class="acts"><button class="btn btn-b" onclick="simpanModal()">+ Catat Pengeluaran</button></div>
+        </div>
+        <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="stat-card"><div class="slbl">Modal Fisik</div><div class="sval sv-b" id="ms-fisik">Rp 0</div></div>
+          <div class="stat-card"><div class="slbl">Modal Operasional</div><div class="sval sv-o" id="ms-ops">Rp 0</div></div>
+          <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="ms-total">Rp 0</div></div>
+        </div>
+        <div class="card"><div class="chdr">Daftar Pengeluaran Modal</div><div id="modal-list"><div class="empty">Belum ada catatan</div></div></div>
+      </div>
+
+      <!-- UNTUNG RUGI -->
+      <div id="page-pl" class="page">
+        <div class="card" style="border-left:3px solid var(--blue);">
+          <div class="chdr">Laporan Untung &amp; Rugi</div>
+          <div class="pl-sec-hdr" style="margin-top:0;">Pemasukan</div>
+          <div class="pl-row"><span>Kuitansi Asli (Order Nyata)</span><span class="pv sv-g" id="pl-asli">Rp 0</span></div>
+          <div class="pl-row"><span>Pemasukan Lain</span><span class="pv sv-g" id="pl-lain-masuk">Rp 0</span></div>
+          <div class="pl-sub-row"><span>Subtotal Pemasukan</span><span class="pv sv-g" id="pl-sub-masuk">Rp 0</span></div>
+          <div class="pl-sec-hdr">Pengeluaran</div>
+          <div class="pl-row"><span>Modal Fisik</span><span class="pv sv-r" id="pl-fisik">Rp 0</span></div>
+          <div class="pl-row"><span>Modal Operasional</span><span class="pv sv-r" id="pl-ops">Rp 0</span></div>
+          <div class="pl-row"><span>Pengeluaran Lain</span><span class="pv sv-r" id="pl-lain-keluar">Rp 0</span></div>
+          <div class="pl-sub-row"><span>Subtotal Pengeluaran</span><span class="pv sv-r" id="pl-sub-keluar">Rp 0</span></div>
+          <div class="pl-net-row"><span>LABA / RUGI BERSIH</span><span class="pv" id="pl-net">Rp 0</span></div>
+          <div id="pl-status-box" style="text-align:center;padding:11px;border-radius:var(--rsm);font-size:13px;font-weight:700;margin-top:8px;"></div>
+        </div>
+        <div class="card">
+          <div class="chdr">Catatan Lainnya</div>
+          <div class="g2">
+            <div class="fg"><label>Jenis</label>
+              <select id="pl-type"><option value="masuk">Pemasukan Lain</option><option value="keluar">Pengeluaran Lain</option></select>
+            </div>
+            <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="pl-amt" placeholder="0"></div>
+          </div>
+          <div class="fg"><label>Keterangan</label><input type="text" id="pl-desc" placeholder="Deskripsi..."></div>
+          <div class="acts"><button class="btn btn-p" onclick="simpanPL()">Catat</button></div>
+          <div id="pl-extra-list" style="margin-top:14px;"><div class="empty">Belum ada catatan tambahan</div></div>
+        </div>
+      </div>
+
+      <!-- RIWAYAT -->
+      <div id="page-riwayat" class="page">
+        <div class="card">
+          <div class="chdr">Semua Kuitansi
+            <select id="filter-tipe" onchange="renderRiwayat()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
+              <option value="semua">Semua</option>
+              <option value="asli">Asli</option>
+              <option value="fiktif">Fiktif</option>
+            </select>
+          </div>
+          <div id="kwt-list"><div class="empty">Belum ada kuitansi</div></div>
+        </div>
+      </div>
+
+      <!-- LOG AKTIVITAS -->
+      <div id="page-log" class="page">
+        <div class="card">
+          <div class="chdr">Log Aktivitas Sistem
+            <div style="display:flex;gap:7px;flex-wrap:wrap;">
+              <select id="log-filter-user" onchange="renderLog()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
+                <option value="semua">Semua Pengguna</option>
+                <option value="Admin">Admin</option>
+                <option value="Agus">Agus</option>
+                <option value="Arko">Arko</option>
+              </select>
+              <select id="log-filter-type" onchange="renderLog()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
+                <option value="semua">Semua Aksi</option>
+                <option value="login">Login/Logout</option>
+                <option value="logout">Logout</option>
+                <option value="kuitansi">Kuitansi</option>
+                <option value="modal">Modal</option>
+                <option value="pl">P&amp;L</option>
+                <option value="backup">Backup</option>
+                <option value="restore">Restore</option>
+              </select>
+              <button class="btn btn-o btn-sm" onclick="eksporLogCSV()">⬇ Export CSV</button>
+              <button class="btn btn-r btn-sm" onclick="if(confirm('Hapus seluruh log?')){db.logs=[];saveDB();renderLog();}">Bersihkan</button>
+            </div>
+          </div>
+          <div id="log-count" style="font-size:11px;color:var(--ink3);margin-bottom:10px;"></div>
+          <div id="log-list"><div class="empty">Belum ada log</div></div>
+        </div>
+      </div>
+
+      <!-- BACKUP & RESTORE -->
+      <div id="page-backup" class="page">
+        <!-- PENGATURAN SINKRONISASI GIST -->
+        <div class="card" style="border-left:3px solid var(--cyan);">
+          <div class="chdr">⚙️ Pengaturan Sinkronisasi Gist</div>
+          <div id="gist-settings-area">
+            <div class="empty">Memuat...</div>
+          </div>
+        </div>
+          <div class="chdr">Backup Data</div>
+          <div class="backup-grid">
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-c">📦</div>
+                <div><div class="backup-item-title">Backup Semua Data</div>
+                  <div class="backup-item-desc">Kuitansi, modal, P&L, dan log</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-b btn-sm" onclick="doBackup('all')">⬇ Download</button>
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-g">🧾</div>
+                <div><div class="backup-item-title">Backup Kuitansi</div>
+                  <div class="backup-item-desc">Semua data kuitansi saja</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-g btn-sm" onclick="doBackup('kuitansi')">⬇ Download</button>
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-b">💰</div>
+                <div><div class="backup-item-title">Backup Modal &amp; P&L</div>
+                  <div class="backup-item-desc">Data pengeluaran dan catatan keuangan</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-o btn-sm" onclick="doBackup('modal')">⬇ Download</button>
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-v">📋</div>
+                <div><div class="backup-item-title">Backup Log</div>
+                  <div class="backup-item-desc">Log aktivitas — JSON atau CSV</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-o btn-sm" onclick="doBackup('logs')">⬇ JSON</button>
+                <button class="btn btn-o btn-sm" onclick="eksporLogCSV()">⬇ CSV</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bk-divider"></div>
+          <div class="chdr" style="margin-bottom:12px;">Restore Data</div>
+          <div style="background:var(--red-l);border:1px solid rgba(239,68,68,.25);color:#fca5a5;padding:10px 13px;border-radius:var(--rsm);font-size:12px;margin-bottom:14px;">
+            ⚠ Restore akan <strong>mengganti</strong> data yang ada. Pastikan Anda sudah backup terlebih dahulu.
+          </div>
+          <div class="backup-grid">
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-c">📦</div>
+                <div><div class="backup-item-title">Restore Semua Data</div>
+                  <div class="backup-item-desc">Dari file backup lengkap (.json)</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-orange btn-sm" onclick="triggerRestore('all')">⬆ Pilih File</button>
+                <input type="file" id="ri-all" class="restore-input" accept=".json" onchange="doRestore(this,'all')">
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-g">🧾</div>
+                <div><div class="backup-item-title">Restore Kuitansi</div>
+                  <div class="backup-item-desc">Dari backup kuitansi (.json)</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-orange btn-sm" onclick="triggerRestore('kuitansi')">⬆ Pilih File</button>
+                <input type="file" id="ri-kuitansi" class="restore-input" accept=".json" onchange="doRestore(this,'kuitansi')">
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-b">💰</div>
+                <div><div class="backup-item-title">Restore Modal</div>
+                  <div class="backup-item-desc">Dari backup modal (.json)</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-orange btn-sm" onclick="triggerRestore('modal')">⬆ Pilih File</button>
+                <input type="file" id="ri-modal" class="restore-input" accept=".json" onchange="doRestore(this,'modal')">
+              </div>
+            </div>
+            <div class="backup-item">
+              <div class="backup-item-hdr">
+                <div class="ico ico-v">📋</div>
+                <div><div class="backup-item-title">Restore Log</div>
+                  <div class="backup-item-desc">Dari backup log (.json)</div></div>
+              </div>
+              <div class="backup-item-actions">
+                <button class="btn btn-orange btn-sm" onclick="triggerRestore('logs')">⬆ Pilih File</button>
+                <input type="file" id="ri-logs" class="restore-input" accept=".json" onchange="doRestore(this,'logs')">
+              </div>
+            </div>
+          </div>
+
+          <div class="bk-divider"></div>
+          <div class="chdr" style="margin-bottom:12px;">Informasi Data Tersimpan</div>
+          <div id="db-info" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;"></div>
+        </div>
+      </div>
+
+    </div><!-- /inner -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+// Token dibaca dari localStorage — tidak pernah hardcode di kode
+// Diisi oleh owner lewat halaman Backup & Restore → Pengaturan Sinkronisasi
+function getToken(){ return localStorage.getItem('pm_gist_token')||''; }
+function getGistId(){ return localStorage.getItem('pm_gist_id')||''; }
+function setGistId(id){ localStorage.setItem('pm_gist_id',id); }
+
+const USERS={
+  admin:{name:'Admin',role:'admin',initials:'AD',pipClass:'pip-a',pass:'admin123'},
+  agus:{name:'Agus',role:'owner',initials:'AG',pipClass:'pip-o',pass:'vtnyzp40975'},
+  arko:{name:'Arko',role:'owner',initials:'AR',pipClass:'pip-o',pass:'htw876'}
+};
+
+let CU=null,selKey=null;
+let db={kuitansi:[],modal:[],plManual:[],logs:[]};
+let _syncTimer=null;
+
+// ---- SYNC BADGE ----
+function setSyncBadge(state,msg){
+  const el=document.getElementById('sync-badge');if(!el)return;
+  el.className='sync-badge sync-'+state;
+  const icons={idle:'☁️',saving:'🔄',ok:'✅',err:'❌',loading:'🔄'};
+  el.textContent=(icons[state]||'☁️')+' '+msg;
+  el.onclick=state==='err'?()=>syncToGist():null;
+  el.title=state==='err'?'Klik untuk coba sync ulang':'Status sinkronisasi Gist';
+}
+
+// ---- GIST API ----
+async function gistFetch(method,path,body){
+  const res=await fetch('https://api.github.com/'+path,{
+    method,
+    headers:{
+      'Authorization':'token '+getToken(),
+      'Content-Type':'application/json',
+      'Accept':'application/vnd.github.v3+json'
+    },
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.message||res.status);}
+  return res.json();
+}
+
+async function ensureGist(){
+  // 1. Pakai ID yang sudah tersimpan di browser ini
+  let id=getGistId();
+  if(id){
+    // Verifikasi ID masih valid
+    try{
+      const g=await gistFetch('GET','gists/'+id);
+      if(g&&g.id)return id;
+    }catch(e){
+      // ID tidak valid (mungkin dihapus), reset dan cari ulang
+      localStorage.removeItem('pm_gist_id');
+    }
+  }
+  // 2. Cari Gist yang sudah ada di akun (agar semua device pakai Gist yang sama)
+  setSyncBadge('loading','Mencari Gist...');
+  try{
+    const list=await gistFetch('GET','gists?per_page=100');
+    const found=list.find(g=>g.description==='PrintManager Pro — Data Storage'
+      && g.files&&g.files['printmanager_data.json']);
+    if(found){
+      setGistId(found.id);
+      return found.id;
+    }
+  }catch(e){ console.warn('Gist search error:',e.message); }
+  // 3. Belum ada — buat baru
+  setSyncBadge('saving','Membuat Gist baru...');
+  const g=await gistFetch('POST','gists',{
+    description:'PrintManager Pro — Data Storage',
+    public:false,
+    files:{'printmanager_data.json':{content:JSON.stringify({kuitansi:[],modal:[],plManual:[],logs:[]})}}
+  });
+  setGistId(g.id);
+  return g.id;
+}
+
+async function loadFromGist(){
+  const token=getToken();
+  if(!token){
+    try{const s=localStorage.getItem('pm_v5');if(s)db=JSON.parse(s);if(!db.logs)db.logs=[];}catch(e){}
+    setSyncBadge('idle','Lokal saja');
+    return;
+  }
+  setSyncBadge('loading','Memuat data...');
+  try{
+    const id=await ensureGist();
+    const g=await gistFetch('GET','gists/'+id);
+    const content=g.files['printmanager_data.json']?.content;
+    if(content){
+      const parsed=JSON.parse(content);
+      db=parsed;if(!db.logs)db.logs=[];
+      localStorage.setItem('pm_v5',JSON.stringify(db));
+    }
+    setSyncBadge('ok','Tersinkron');
+    setTimeout(()=>setSyncBadge('idle','☁️ Gist'),2500);
+  }catch(err){
+    console.warn('Gist load error:',err.message);
+    try{const s=localStorage.getItem('pm_v5');if(s)db=JSON.parse(s);if(!db.logs)db.logs=[];}catch(e){}
+    setSyncBadge('err','Gagal load');
+  }
+}
+
+async function syncToGist(){
+  const token=getToken();
+  try{localStorage.setItem('pm_v5',JSON.stringify(db));}catch(e){}
+  if(!token){return;}
+  setSyncBadge('saving','Menyimpan...');
+  try{
+    const id=await ensureGist();
+    await gistFetch('PATCH','gists/'+id,{
+      files:{'printmanager_data.json':{content:JSON.stringify(db)}}
+    });
+    setSyncBadge('ok','Tersimpan ✓');
+    setTimeout(()=>setSyncBadge('idle','☁️ Gist'),2000);
+  }catch(err){
+    console.warn('Gist save error:',err.message);
+    setSyncBadge('err','Gagal simpan');
+  }
+}
+
+function saveDB(){
+  try{localStorage.setItem('pm_v5',JSON.stringify(db));}catch(e){}
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(syncToGist,1500);
+}
+
+async function loadDB(){
+  await loadFromGist();
+}
+
+// ---- GIST TOKEN SETTINGS (dipanggil dari halaman Backup) ----
+function renderGistSettings(){
+  const el=document.getElementById('gist-settings-area');if(!el)return;
+  const token=getToken();
+  const gistId=getGistId();
+  const hasToken=token.length>0;
+  el.innerHTML=`
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div class="ico ${hasToken?'ico-g':'ico-r'}" style="flex-shrink:0;">${hasToken?'🔑':'🔒'}</div>
+        <div>
+          <div class="liname">GitHub Gist Token</div>
+          <div class="limeta">${hasToken?'Token aktif — sinkronisasi Gist diaktifkan':'Belum ada token — data hanya tersimpan lokal'}</div>
+        </div>
+        <div class="liamt ${hasToken?'pos':'neg'}" style="margin-left:auto;">${hasToken?'✅ Aktif':'⚠ Belum diisi'}</div>
+      </div>
+      <div class="fg" style="margin-bottom:8px;">
+        <label>Personal Access Token (scope: gist)</label>
+        <input type="password" id="token-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          value="${hasToken?token:''}"
+          style="font-family:var(--mono);font-size:12px;">
+      </div>
+      ${gistId?`<div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">Gist ID: <code style="color:var(--cyan);font-family:var(--mono);">${gistId}</code> <button class="btn btn-r btn-sm" onclick="clearGistId()" style="margin-left:8px;">Reset Gist ID</button></div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-b btn-sm" onclick="saveGistToken()">💾 Simpan Token</button>
+        ${hasToken?`<button class="btn btn-r btn-sm" onclick="hapusGistToken()">🗑 Hapus Token</button>
+        <button class="btn btn-o btn-sm" onclick="testGistToken()">🔄 Test Koneksi</button>`:''}
+      </div>
+      <div id="token-msg" style="margin-top:10px;font-size:12px;"></div>
+    </div>
+    <div style="background:var(--blue-l);border:1px solid var(--blue-m);color:#93c5fd;padding:10px 13px;border-radius:var(--rsm);font-size:12px;">
+      💡 Token disimpan hanya di browser ini (localStorage). Tidak pernah ditulis ke kode atau dikirim ke server lain.
+      Buat token di <strong>github.com/settings/tokens</strong> → Generate new token (classic) → centang scope <strong>gist</strong>.
+    </div>`;
+}
+
+function saveGistToken(){
+  const val=document.getElementById('token-input').value.trim();
+  const msg=document.getElementById('token-msg');
+  if(!val){msg.style.color='var(--red)';msg.textContent='Token tidak boleh kosong.';return;}
+  if(!val.startsWith('ghp_')&&!val.startsWith('github_pat_')){
+    msg.style.color='var(--orange)';msg.textContent='⚠ Format token tidak umum, pastikan benar.';}
+  else{msg.style.color='var(--green)';msg.textContent='✅ Token disimpan! Mencoba koneksi...';}
+  localStorage.setItem('pm_gist_token',val);
+  renderGistSettings();
+  testGistToken();
+}
+
+function hapusGistToken(){
+  if(!confirm('Hapus token? Sinkronisasi Gist akan dimatikan.'))return;
+  localStorage.removeItem('pm_gist_token');
+  setSyncBadge('idle','Lokal saja');
+  renderGistSettings();
+}
+
+function clearGistId(){
+  if(!confirm('Reset Gist ID? Gist baru akan dibuat saat sync berikutnya.'))return;
+  localStorage.removeItem('pm_gist_id');
+  renderGistSettings();
+}
+
+async function testGistToken(){
+  const msg=document.getElementById('token-msg');
+  if(msg){msg.style.color='var(--blue)';msg.textContent='🔄 Mengetes koneksi...';}
+  setSyncBadge('loading','Mengetes...');
+  try{
+    await gistFetch('GET','user');
+    setSyncBadge('ok','Terhubung ✓');
+    if(msg){msg.style.color='var(--green)';msg.textContent='✅ Koneksi berhasil! Token valid dan Gist dapat diakses.';}
+    setTimeout(()=>{setSyncBadge('idle','☁️ Gist');syncToGist();},1500);
+  }catch(err){
+    setSyncBadge('err','Token tidak valid');
+    if(msg){msg.style.color='var(--red)';msg.textContent='❌ Gagal: '+err.message+'. Pastikan token benar dan scope gist dicentang.';}
+  }
+}
+function fmt(n){return'Rp '+Math.round(n).toLocaleString('id-ID');}
+function fmtTgl(str){if(!str)return'-';const d=new Date(str);return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear();}
+function fmtDT(ts){const d=new Date(ts);return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+function nowStamp(){const d=new Date();return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');}
+function dlJSON(data,fname){const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u);}
+function dlText(text,fname){const b=new Blob([text],{type:'text/plain'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fname;a.click();URL.revokeObjectURL(u);}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+
+// LOG
+function addLog(cat,act,detail){
+  if(!db.logs)db.logs=[];
+  db.logs.unshift({id:Date.now()+Math.random(),ts:new Date().toISOString(),user:CU?CU.name:'System',role:CU?CU.role:'-',category:cat,action:act,detail:detail});
+  if(db.logs.length>1000)db.logs=db.logs.slice(0,1000);
+  saveDB();
+}
+function ldClass(cat,act){
+  if(act==='login')return'ld-login';
+  if(act==='logout')return'ld-logout';
+  if(act==='hapus')return'ld-hapus';
+  if(act==='backup'||cat==='backup')return'ld-backup';
+  if(cat==='modal')return'ld-modal';
+  if(cat==='pl')return'ld-pl';
+  return'ld-masuk';
+}
+function actIco(cat,act){
+  if(act==='login')return'🔑';if(act==='logout')return'🚪';
+  if(act==='hapus')return'🗑️';if(act==='backup'||cat==='backup')return'💾';
+  if(act==='restore'||cat==='restore')return'♻️';
+  if(cat==='kuitansi')return'🧾';if(cat==='modal')return'💰';if(cat==='pl')return'📊';
+  return'📝';
+}
+function renderLog(){
+  const fu=document.getElementById('log-filter-user').value;
+  const ft=document.getElementById('log-filter-type').value;
+  let list=db.logs||[];
+  if(fu!=='semua')list=list.filter(l=>l.user===fu);
+  if(ft!=='semua')list=list.filter(l=>l.category===ft||l.action===ft);
+  const cnt=document.getElementById('log-count');
+  if(cnt)cnt.textContent='Menampilkan '+list.length+' dari '+(db.logs||[]).length+' entri';
+  const el=document.getElementById('log-list');
+  if(!list.length){el.innerHTML='<div class="empty">Tidak ada log yang cocok</div>';return;}
+  el.innerHTML=list.map(l=>`
+    <div class="log-entry">
+      <div class="log-dot ${ldClass(l.category,l.action)}"></div>
+      <div class="log-main">
+        <div class="log-msg">${actIco(l.category,l.action)}&nbsp;<span class="log-who who-${l.user}">${l.user}</span>${l.detail}</div>
+        <div class="log-sub">${fmtDT(l.ts)}&nbsp;·&nbsp;<span class="tag t-log">${l.category}</span></div>
+      </div>
+    </div>`).join('');
+}
+function eksporLogCSV(){
+  const rows=['Waktu,Pengguna,Role,Kategori,Aksi,Detail'];
+  (db.logs||[]).forEach(l=>{
+    const d=l.detail.replace(/<[^>]+>/g,'').replace(/,/g,';');
+    rows.push('"'+fmtDT(l.ts)+'","'+l.user+'","'+l.role+'","'+l.category+'","'+l.action+'","'+d+'"');
+  });
+  dlText(rows.join('\n'),'log_aktivitas_'+nowStamp()+'.csv');
+  addLog('backup','backup','mengekspor log aktivitas ke CSV');
+}
+
+// BACKUP
+function doBackup(type){
+  let data,fname;const ts=nowStamp();
+  if(type==='all'){
+    data={version:'pm_v5',exportedAt:new Date().toISOString(),exportedBy:CU.name,db:db};
+    fname='printmanager_FULL_'+ts+'.json';
+  }else if(type==='kuitansi'){
+    data={version:'pm_v5',type:'kuitansi',exportedAt:new Date().toISOString(),exportedBy:CU.name,kuitansi:db.kuitansi};
+    fname='backup_kuitansi_'+ts+'.json';
+  }else if(type==='modal'){
+    data={version:'pm_v5',type:'modal',exportedAt:new Date().toISOString(),exportedBy:CU.name,modal:db.modal,plManual:db.plManual};
+    fname='backup_modal_'+ts+'.json';
+  }else if(type==='logs'){
+    data={version:'pm_v5',type:'logs',exportedAt:new Date().toISOString(),exportedBy:CU.name,logs:db.logs};
+    fname='backup_log_'+ts+'.json';
+  }
+  dlJSON(data,fname);
+  addLog('backup','backup','membuat backup <strong>'+(type==='all'?'semua data':type)+'</strong> → '+fname);
+  renderBackupInfo();
+}
+function triggerRestore(type){document.getElementById('ri-'+type).click();}
+function doRestore(input,type){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const p=JSON.parse(e.target.result);let msg='';
+      if(type==='all'){
+        if(!p.db)throw new Error('Format tidak valid (tidak ada key "db")');
+        if(!confirm('Ini akan MENGGANTI SEMUA data. Lanjutkan?'))return;
+        db=p.db;if(!db.logs)db.logs=[];
+        msg='melakukan restore SEMUA DATA dari file backup';
+      }else if(type==='kuitansi'){
+        if(!p.kuitansi)throw new Error('Format tidak valid');
+        if(!confirm('Mengganti '+p.kuitansi.length+' data kuitansi. Lanjutkan?'))return;
+        db.kuitansi=p.kuitansi;msg='restore kuitansi ('+p.kuitansi.length+' data)';
+      }else if(type==='modal'){
+        if(!confirm('Mengganti data modal. Lanjutkan?'))return;
+        if(p.modal)db.modal=p.modal;if(p.plManual)db.plManual=p.plManual;
+        msg='restore data modal & pengeluaran';
+      }else if(type==='logs'){
+        if(!p.logs)throw new Error('Format tidak valid');
+        if(!confirm('Mengganti log ('+p.logs.length+' entri). Lanjutkan?'))return;
+        db.logs=p.logs;msg='restore log ('+p.logs.length+' entri)';
+      }
+      saveDB();addLog('restore','restore',msg);
+      renderDashboard();renderBackupInfo();
+      alert('Restore berhasil!');
+    }catch(err){alert('Gagal restore: '+err.message);}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+function renderBackupInfo(){
+  const el=document.getElementById('db-info');if(!el)return;
+  const items=[
+    {label:'Kuitansi',count:(db.kuitansi||[]).length,ico:'🧾',cls:'sv-g'},
+    {label:'Modal',count:(db.modal||[]).length,ico:'💰',cls:'sv-b'},
+    {label:'P&L Manual',count:(db.plManual||[]).length,ico:'📊',cls:'sv-o'},
+    {label:'Log Entri',count:(db.logs||[]).length,ico:'📋',cls:'sv-r'},
+  ];
+  el.innerHTML=items.map(i=>`<div class="stat-card"><div class="slbl">${i.ico} ${i.label}</div><div class="sval ${i.cls}">${i.count}</div><div style="font-size:11px;color:var(--ink3);margin-top:4px;">entri tersimpan</div></div>`).join('');
+}
+
+// Manual sync — force reload dari Gist lalu render ulang semua halaman
+async function manualSync(){
+  if(!getToken()){alert('Token belum diisi. Buka Backup & Restore → Pengaturan Sinkronisasi.');return;}
+  // Reset Gist ID agar ensureGist mencari ulang (mengatasi device yang salah ID)
+  localStorage.removeItem('pm_gist_id');
+  await loadFromGist();
+  renderDashboard();
+  // Render ulang halaman yang sedang aktif
+  const activePage=document.querySelector('.page.on');
+  if(activePage){
+    const id=activePage.id.replace('page-','');
+    if(id==='modal')renderModal();
+    if(id==='riwayat')renderRiwayat();
+    if(id==='pl')updatePL();
+    if(id==='log')renderLog();
+  }
+  alert('Sync selesai! Data terbaru dari Gist sudah dimuat.');
+}
+
+// LOGIN
+function pickUser(k){selKey=k;document.querySelectorAll('.ucard').forEach(c=>c.classList.remove('sel'));document.getElementById('uc-'+k).classList.add('sel');document.getElementById('lpass').focus();}
+
+// Terapkan UI setelah login (dipakai doLogin & restore session)
+async function applyLogin(u, isRestore){
+  CU={key:u.key||Object.keys(USERS).find(k=>USERS[k].name===u.name), ...u};
+  document.getElementById('login-wrap').style.display='none';
+  document.getElementById('app').classList.add('on');
+  const pip=document.getElementById('tb-pip');
+  pip.textContent=u.initials;pip.className='upip '+u.pipClass;
+  document.getElementById('tb-name').textContent=u.name;
+  document.getElementById('tb-role').textContent=u.role==='owner'?'Owner':'Administrator';
+  if(u.role==='owner')document.querySelectorAll('.owner-only').forEach(e=>e.style.display='flex');
+  // Tampilkan tombol sync manual jika ada token
+  if(getToken()) document.getElementById('sync-manual-btn').style.display='';
+  autoNo();
+  // Reset Gist ID setiap login agar device selalu mencari Gist yang benar
+  // (mengatasi kasus device berbeda punya ID yang salah/berbeda)
+  if(!isRestore) localStorage.removeItem('pm_gist_id');
+  // Load dari Gist DULU, baru catat log (hindari overwrite data dengan db kosong)
+  await loadDB();
+  if(!isRestore) addLog('login','login','masuk sebagai '+u.name+' ('+u.role+')');
+  renderDashboard();
+}
+
+function doLogin(){
+  const err=document.getElementById('lerr');err.style.display='none';
+  if(!selKey){err.textContent='Pilih akun terlebih dahulu.';err.style.display='block';return;}
+  const pass=document.getElementById('lpass').value;
+  const u=USERS[selKey];
+  if(pass!==u.pass){err.textContent='Password salah. Coba lagi.';err.style.display='block';return;}
+  // Simpan sesi TANPA password
+  const {pass:_,  ...safeUser}=u;
+  localStorage.setItem('pm_session', JSON.stringify({key:selKey,...safeUser}));
+  applyLogin({key:selKey,...u}, false);
+}
+
+function doLogout(){
+  addLog('logout','logout','keluar dari sistem');
+  CU=null;selKey=null;
+  localStorage.removeItem('pm_session');
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('login-wrap').style.display='flex';
+  document.getElementById('lpass').value='';
+  document.querySelectorAll('.ucard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('lerr').style.display='none';
+  document.querySelectorAll('.owner-only').forEach(e=>e.style.display='none');
+  goPage('dashboard');
+}
+
+// NAVIGATION
+const PAGES=['dashboard','kuitansi','modal','pl','riwayat','log','backup'];
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('act'));
+  document.getElementById('page-'+id).classList.add('on');
+  const idx=PAGES.indexOf(id);
+  if(idx>=0)document.querySelectorAll('.nbtn')[idx].classList.add('act');
+  if(id==='dashboard')renderDashboard();
+  if(id==='modal')renderModal();
+  if(id==='riwayat')renderRiwayat();
+  if(id==='pl')updatePL();
+  if(id==='log')renderLog();
+  if(id==='backup'){renderBackupInfo();renderGistSettings();}
+}
+
+// ROWS
+let rows=[];
+function addRow(d,q,h){rows.push({id:Date.now()+Math.random(),d:d||'',q:q||'',h:h||''});renderRows();}
+function removeRow(rid){rows=rows.filter(r=>r.id!==rid);renderRows();}
+function renderRows(){
+  const tb=document.getElementById('items-body');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--ink3);padding:14px;font-size:12px;">Klik "+ Tambah Item" untuk menambah baris</td></tr>';recalc();return;}
+  tb.innerHTML=rows.map((r,i)=>`<tr>
+    <td class="td-no">${i+1}</td>
+    <td><input type="text" value="${esc(r.d)}" oninput="rows[${i}].d=this.value" placeholder="Deskripsi item"></td>
+    <td class="td-qty"><input type="number" value="${r.q}" oninput="rows[${i}].q=this.value;recalc()" style="text-align:right;" placeholder="0"></td>
+    <td class="td-hp"><input type="number" value="${r.h}" oninput="rows[${i}].h=this.value;recalc()" style="text-align:right;" placeholder="0"></td>
+    <td class="td-sub" id="sub-${i}">Rp 0</td>
+    <td class="td-del"><button class="del-btn" onclick="removeRow(${r.id})">×</button></td>
+  </tr>`).join('');
+  recalc();
+}
+function recalc(){
+  let tot=0;
+  rows.forEach((r,i)=>{
+    const s=(parseFloat(r.q)||0)*(parseFloat(r.h)||0);
+    const el=document.getElementById('sub-'+i);if(el)el.textContent=fmt(s);
+    tot+=s;
+  });
+  const dis=parseFloat(document.getElementById('q-diskon').value)||0;
+  const net=Math.max(0,tot-dis);
+  document.getElementById('q-total').textContent=fmt(net);
+  return{tot,dis,net};
+}
+function onTipeChange(){document.getElementById('fiktif-note').style.display=document.getElementById('q-tipe').value==='fiktif'?'block':'none';}
+function autoNo(){const n=db.kuitansi.length+1;const m=String(new Date().getMonth()+1).padStart(2,'0');document.getElementById('q-no').value='KWT-'+m+'-'+String(n).padStart(3,'0');}
+function resetKuitansi(){
+  rows=[];renderRows();
+  document.getElementById('q-pelanggan').value='';
+  document.getElementById('q-alamatpl').value='';
+  document.getElementById('q-status').value='LUNAS';
+  document.getElementById('q-catatan').value='Barang yang sudah diambil tidak dapat dikembalikan lagi.';
+  document.getElementById('q-diskon').value=0;
+  document.getElementById('q-tipe').value='asli';
+  onTipeChange();
+  document.getElementById('rc-container').style.display='none';
+  document.getElementById('print-acts').style.display='none';
+  autoNo();
+}
+function getFormData(){
+  const{net,dis}=recalc();
+  return{
+    tipe:document.getElementById('q-tipe').value,
+    namapt:document.getElementById('q-namapt').value,
+    kontakpt:document.getElementById('q-kontakpt').value,
+    alamatpt:document.getElementById('q-alamatpt').value,
+    no:document.getElementById('q-no').value,
+    tgl:document.getElementById('q-tgl').value,
+    status:document.getElementById('q-status').value,
+    pelanggan:document.getElementById('q-pelanggan').value,
+    alamatpl:document.getElementById('q-alamatpl').value,
+    catatan:document.getElementById('q-catatan').value,
+    items:rows.map(r=>({d:r.d,q:r.q,h:r.h})),
+    diskon:dis,total:net
+  };
+}
+
+// BUILD RECEIPT
+function buildReceipt(k,inSystem){
+  const isFiktif=k.tipe==='fiktif';
+  const tglStr=fmtTgl(k.tgl);
+  const kota=(k.namapt||'').split(',')[0].trim().split(/\s+/).slice(-1)[0];
+  const rowsHTML=(k.items||[]).map((r,i)=>{
+    const q=parseFloat(r.q)||0,h=parseFloat(r.h)||0,s=q*h;
+    return`<tr><td>${i+1}</td><td>${r.d||''}</td><td class="rnum">${q.toLocaleString('id-ID')}</td><td class="rnum">Rp ${Math.round(h).toLocaleString('id-ID')}</td><td class="rnum">Rp ${Math.round(s).toLocaleString('id-ID')}</td></tr>`;
+  }).join('');
+  const disRow=k.diskon>0?`<tr><td colspan="4" style="text-align:right;font-style:italic;color:#555;">Diskon</td><td class="rnum">- Rp ${Math.round(k.diskon).toLocaleString('id-ID')}</td></tr>`:'';
+  return`<div class="rc-outer"><div class="rc-body">
+    <div class="rc-company-name">${k.namapt||'PERCETAKAN XYZ'}${isFiktif&&inSystem?` <span class="rc-fiktif-sys">FIKTIF</span>`:''}</div>
+    <div class="rc-company-detail">${k.alamatpt||''}<br>Kontak: ${k.kontakpt||''}</div>
+    <hr class="rc-divider">
+    <div class="rc-title-line"><span class="rc-title">KUITANSI PENJUALAN</span></div>
+    <div class="rc-two-col">
+      <div>
+        <div class="rc-sec-title">Pelanggan</div>
+        <div class="rc-info-row"><span class="rc-info-label">Nama: </span><strong>${k.pelanggan||'-'}</strong></div>
+        <div class="rc-info-row"><span class="rc-info-label">Alamat:</span></div>
+        <div class="rc-info-row">${k.alamatpl||''}</div>
+      </div>
+      <div>
+        <div class="rc-sec-title">Detail</div>
+        <div class="rc-info-row"><span class="rc-info-label">No. Kuitansi: </span><strong>${k.no||'-'}</strong></div>
+        <div class="rc-info-row"><span class="rc-info-label">Tanggal: </span>${tglStr}</div>
+        <div class="rc-info-row"><span class="rc-info-label">Status: </span><strong>${k.status||'LUNAS'}</strong></div>
+      </div>
+    </div>
+    <div class="rc-sub-title">Rincian Item</div>
+    <table class="rc-table">
+      <thead><tr><th>No</th><th>Deskripsi</th><th class="rnum">Qty</th><th class="rnum">Harga Satuan</th><th class="rnum">Subtotal</th></tr></thead>
+      <tbody>${rowsHTML}${disRow}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">Total</td><td class="rnum">Rp ${Math.round(k.total).toLocaleString('id-ID')}</td></tr></tfoot>
+    </table>
+    <div class="rc-bottom">
+      <div><div class="rc-catatan-title">Catatan</div><div class="rc-catatan-text">${k.catatan||''}</div></div>
+      <div class="rc-ttd">
+        <div class="rc-ttd-place">${kota}, ${tglStr}</div>
+        <div class="rc-ttd-line"></div>
+        <div class="rc-ttd-lbl">Penerima</div>
+      </div>
+    </div>
+    <div class="rc-thanks">Terima kasih atas kepercayaan Anda.</div>
+  </div></div>`;
+}
+function previewKuitansi(){
+  const k=getFormData();
+  document.getElementById('rc-container').innerHTML=buildReceipt(k,true);
+  document.getElementById('rc-container').style.display='block';
+  document.getElementById('print-acts').style.display='flex';
+  document.getElementById('rc-container').scrollIntoView({behavior:'smooth'});
+}
+function simpanKuitansi(){
+  const k=getFormData();
+  if(!k.pelanggan||!k.items.length||k.total===0){alert('Lengkapi nama pelanggan, item, dan harga.');return;}
+  const entry={id:Date.now(),timestamp:new Date().toISOString(),createdBy:CU.name,...k};
+  db.kuitansi.push(entry);saveDB();
+  addLog('kuitansi','masuk','membuat kuitansi <strong>'+k.no+'</strong> untuk <strong>'+k.pelanggan+'</strong> — '+fmt(k.total)+' ['+k.tipe.toUpperCase()+']');
+  previewKuitansi();updatePL();
+  alert('Kuitansi berhasil disimpan!');
+  autoNo();
+}
+
+// MODAL
+function simpanModal(){
+  if(CU.role!=='owner'){alert('Hanya owner yang dapat mencatat modal.');return;}
+  const nama=document.getElementById('m-nama').value;
+  const jml=parseFloat(document.getElementById('m-jml').value)||0;
+  if(!nama||!jml){alert('Lengkapi nama dan jumlah.');return;}
+  const entry={id:Date.now(),jenis:document.getElementById('m-jenis').value,nama,jumlah:jml,
+    ket:document.getElementById('m-ket').value,tgl:document.getElementById('m-tgl').value,
+    timestamp:new Date().toISOString(),createdBy:CU.name};
+  db.modal.push(entry);saveDB();
+  addLog('modal','masuk','mencatat pengeluaran <strong>'+nama+'</strong> — '+fmt(jml)+' ['+entry.jenis+']');
+  document.getElementById('m-nama').value='';
+  document.getElementById('m-jml').value='';
+  document.getElementById('m-ket').value='';
+  renderModal();updatePL();
+  alert('Pengeluaran modal dicatat!');
+}
+function renderModal(){
+  const fisik=db.modal.filter(m=>m.jenis==='fisik').reduce((s,m)=>s+m.jumlah,0);
+  const ops=db.modal.filter(m=>m.jenis==='operasional').reduce((s,m)=>s+m.jumlah,0);
+  document.getElementById('ms-fisik').textContent=fmt(fisik);
+  document.getElementById('ms-ops').textContent=fmt(ops);
+  document.getElementById('ms-total').textContent=fmt(fisik+ops);
+  const el=document.getElementById('modal-list');
+  const isOwner=CU&&CU.role==='owner';
+  if(!db.modal.length){el.innerHTML='<div class="empty">Belum ada catatan modal</div>';return;}
+  el.innerHTML=[...db.modal].reverse().map(m=>`
+    <div class="li-row">
+      <div class="li-l">
+        <div class="ico ${m.jenis==='fisik'?'ico-b':'ico-o'}">${m.jenis==='fisik'?'🏭':'⚡'}</div>
+        <div>
+          <div class="liname">${m.nama}</div>
+          <div class="limeta">${m.tgl||'-'} · <span class="tag ${m.jenis==='fisik'?'t-fisik':'t-ops'}">${m.jenis}</span>${m.ket?' · '+m.ket:''} · oleh <strong>${m.createdBy||'-'}</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="liamt neg">-${fmt(m.jumlah)}</div>
+        ${isOwner?`<button class="btn btn-r" onclick="hapusModal(${m.id})">✕</button>`:''}
+      </div>
+    </div>`).join('');
+}
+function hapusModal(id){
+  if(CU.role!=='owner'){alert('Hanya owner yang dapat menghapus.');return;}
+  const m=db.modal.find(x=>x.id===id);if(!m)return;
+  if(!confirm('Hapus "'+m.nama+'" — '+fmt(m.jumlah)+'?'))return;
+  addLog('modal','hapus','menghapus pengeluaran <strong>'+m.nama+'</strong> — '+fmt(m.jumlah));
+  db.modal=db.modal.filter(x=>x.id!==id);saveDB();renderModal();updatePL();
+}
+
+// P&L
+function simpanPL(){
+  if(CU.role!=='owner'){alert('Hanya owner yang dapat mencatat.');return;}
+  const amt=parseFloat(document.getElementById('pl-amt').value)||0;
+  const desc=document.getElementById('pl-desc').value;
+  if(!desc||!amt){alert('Lengkapi keterangan dan jumlah.');return;}
+  const type=document.getElementById('pl-type').value;
+  db.plManual.push({id:Date.now(),type,amount:amt,desc,tgl:new Date().toISOString().split('T')[0]});
+  saveDB();
+  addLog('pl','masuk','mencatat '+(type==='masuk'?'pemasukan':'pengeluaran')+' lain: <strong>'+desc+'</strong> — '+fmt(amt));
+  updatePL();
+  document.getElementById('pl-amt').value='';
+  document.getElementById('pl-desc').value='';
+}
+function updatePL(){
+  const asli=db.kuitansi.filter(k=>k.tipe==='asli').reduce((s,k)=>s+k.total,0);
+  const lainM=db.plManual.filter(p=>p.type==='masuk').reduce((s,p)=>s+p.amount,0);
+  const lainK=db.plManual.filter(p=>p.type==='keluar').reduce((s,p)=>s+p.amount,0);
+  const fisik=db.modal.filter(m=>m.jenis==='fisik').reduce((s,m)=>s+m.jumlah,0);
+  const ops=db.modal.filter(m=>m.jenis==='operasional').reduce((s,m)=>s+m.jumlah,0);
+  const subM=asli+lainM,subK=fisik+ops+lainK,net=subM-subK;
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  sv('pl-asli',fmt(asli));sv('pl-lain-masuk',fmt(lainM));sv('pl-sub-masuk',fmt(subM));
+  sv('pl-fisik',fmt(fisik));sv('pl-ops',fmt(ops));sv('pl-lain-keluar',fmt(lainK));sv('pl-sub-keluar',fmt(subK));
+  const ne=document.getElementById('pl-net');
+  if(ne){ne.textContent=(net>=0?'+':'')+fmt(net);ne.style.color=net>=0?'var(--green)':'var(--red)';}
+  const sb=document.getElementById('pl-status-box');
+  if(sb){
+    if(net>0){sb.style.cssText='background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);text-align:center;padding:11px;border-radius:var(--rsm);font-size:13px;font-weight:700;';sb.textContent='UNTUNG — Usaha Anda menghasilkan laba bersih!';}
+    else if(net<0){sb.style.cssText='background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);text-align:center;padding:11px;border-radius:var(--rsm);font-size:13px;font-weight:700;';sb.textContent='RUGI — Pengeluaran melebihi pemasukan saat ini.';}
+    else{sb.style.cssText='background:var(--surf2);color:var(--ink3);text-align:center;padding:11px;border-radius:var(--rsm);font-size:13px;font-weight:600;';sb.textContent='Belum ada data atau kondisi Break Even.';}
+  }
+  const plel=document.getElementById('pl-extra-list');
+  if(plel){
+    if(!db.plManual.length){plel.innerHTML='<div class="empty">Belum ada catatan tambahan</div>';return;}
+    plel.innerHTML=[...db.plManual].reverse().map(p=>`
+      <div class="li-row">
+        <div class="li-l">
+          <div class="ico ${p.type==='masuk'?'ico-g':'ico-r'}">${p.type==='masuk'?'✅':'❌'}</div>
+          <div><div class="liname">${p.desc}</div><div class="limeta">${p.tgl}</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="liamt ${p.type==='masuk'?'pos':'neg'}">${p.type==='masuk'?'+':'-'}${fmt(p.amount)}</div>
+          <button class="btn btn-r" onclick="hapusPL(${p.id})">✕</button>
+        </div>
+      </div>`).join('');
+  }
+}
+function hapusPL(id){
+  const p=db.plManual.find(x=>x.id===id);if(!p)return;
+  if(!confirm('Hapus catatan ini?'))return;
+  addLog('pl','hapus','menghapus catatan: <strong>'+p.desc+'</strong> — '+fmt(p.amount));
+  db.plManual=db.plManual.filter(x=>x.id!==id);saveDB();updatePL();
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const asli=db.kuitansi.filter(k=>k.tipe==='asli').reduce((s,k)=>s+k.total,0);
+  const kel=db.modal.reduce((s,m)=>s+m.jumlah,0)+db.plManual.filter(p=>p.type==='keluar').reduce((s,p)=>s+p.amount,0);
+  const saldo=asli-kel;
+  const now=new Date();
+  const bln=db.kuitansi.filter(k=>{const d=new Date(k.tgl);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}).length;
+  document.getElementById('s-masuk').textContent=fmt(asli);
+  document.getElementById('s-keluar').textContent=fmt(kel);
+  document.getElementById('s-saldo').textContent=fmt(saldo);
+  document.getElementById('s-saldo').className='sval '+(saldo>=0?'sv-g':'sv-r');
+  document.getElementById('s-order').textContent=bln;
+  const all=[
+    ...db.kuitansi.map(k=>({lbl:k.pelanggan+' — '+k.no,date:k.tgl,amt:k.total,pos:true,tag:k.tipe,ico:'🧾',ic:'ico-g',by:k.createdBy})),
+    ...db.modal.map(m=>({lbl:m.nama,date:m.tgl,amt:m.jumlah,pos:false,tag:m.jenis,ico:m.jenis==='fisik'?'🏭':'⚡',ic:'ico-r',by:m.createdBy}))
+  ].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,7);
+  const el=document.getElementById('db-recent');
+  if(!all.length){el.innerHTML='<div class="empty">Belum ada transaksi</div>';return;}
+  el.innerHTML=all.map(t=>`
+    <div class="li-row">
+      <div class="li-l">
+        <div class="ico ${t.ic}">${t.ico}</div>
+        <div>
+          <div class="liname">${t.lbl}</div>
+          <div class="limeta">${t.date||'-'} · <span class="tag ${t.tag==='asli'?'t-asli':t.tag==='fiktif'?'t-fiktif':t.tag==='fisik'?'t-fisik':'t-ops'}">${t.tag}</span>${t.by?' · oleh <strong>'+t.by+'</strong>':''}</div>
+        </div>
+      </div>
+      <div class="liamt ${t.pos?'pos':'neg'}">${t.pos?'+':'-'}${fmt(t.amt)}</div>
+    </div>`).join('');
+}
+
+// RIWAYAT
+function renderRiwayat(){
+  const f=document.getElementById('filter-tipe').value;
+  const list=f==='semua'?db.kuitansi:db.kuitansi.filter(k=>k.tipe===f);
+  const el=document.getElementById('kwt-list');
+  const isOwner=CU&&CU.role==='owner';
+  if(!list.length){el.innerHTML='<div class="empty">Belum ada kuitansi</div>';return;}
+  el.innerHTML=[...list].reverse().map(k=>`
+    <div class="li-row">
+      <div class="li-l">
+        <div class="ico ico-g">🧾</div>
+        <div>
+          <div class="liname">${k.no} — ${k.pelanggan}
+            <span class="tag ${k.tipe==='asli'?'t-asli':'t-fiktif'}" style="margin-left:6px;">${k.tipe.toUpperCase()}</span>
+          </div>
+          <div class="limeta">${k.tgl||'-'} · ${(k.items||[]).length} item · ${fmt(k.total)} · oleh <strong>${k.createdBy||'-'}</strong></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <button class="btn btn-o btn-sm" onclick="lihatKwt(${k.id})">Lihat</button>
+        ${isOwner?`<button class="btn btn-r" onclick="hapusKwt(${k.id})">✕</button>`:''}
+      </div>
+    </div>`).join('');
+}
+function lihatKwt(id){
+  const k=db.kuitansi.find(x=>x.id===id);if(!k)return;
+  goPage('kuitansi');
+  document.getElementById('rc-container').innerHTML=buildReceipt(k,true);
+  document.getElementById('rc-container').style.display='block';
+  document.getElementById('print-acts').style.display='flex';
+  setTimeout(()=>document.getElementById('rc-container').scrollIntoView({behavior:'smooth'}),100);
+}
+function hapusKwt(id){
+  if(CU.role!=='owner'){alert('Hanya owner yang dapat menghapus kuitansi.');return;}
+  const k=db.kuitansi.find(x=>x.id===id);if(!k)return;
+  if(!confirm('Hapus kuitansi '+k.no+' — '+k.pelanggan+'?'))return;
+  addLog('kuitansi','hapus','menghapus kuitansi <strong>'+k.no+'</strong> — '+k.pelanggan+' ['+fmt(k.total)+']');
+  db.kuitansi=db.kuitansi.filter(x=>x.id!==id);saveDB();renderRiwayat();updatePL();
+}
+
+// INIT
+(async()=>{
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('q-tgl').value=today;
+  document.getElementById('m-tgl').value=today;
+  renderRows();
+  // Cek sesi tersimpan — applyLogin akan load Gist sendiri
+  try{
+    const saved=localStorage.getItem('pm_session');
+    if(saved){
+      const u=JSON.parse(saved);
+      const key=u.key||Object.keys(USERS).find(k=>USERS[k].name===u.name);
+      // Cukup cek key valid — pass tidak disimpan di session lagi
+      if(key && USERS[key]){
+        await applyLogin({...USERS[key],key}, true);
+        return;
+      }else{
+        localStorage.removeItem('pm_session');
+      }
+    }
+  }catch(e){localStorage.removeItem('pm_session');}
+  // Tidak ada sesi — load lokal saja untuk cache, tampilkan login
+  try{const s=localStorage.getItem('pm_v5');if(s){db=JSON.parse(s);if(!db.logs)db.logs=[];}}catch(e){}
+  setSyncBadge('idle','Lokal saja');
+})();
+</script>
+</body>
+</html>
