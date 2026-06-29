@@ -4,7 +4,7 @@
 const SUPABASE_URL = 'https://grguwialhmpvssqksgdp.supabase.co'; // Ganti ini
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3V3aWFsaG1wdnNzcWtzZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTcwNzIsImV4cCI6MjA5ODI3MzA3Mn0.NJaM9KzjnuOzKFpl93fzUoJ9ZIYkzP0qVXXKuZFbgc8'; // Ganti ini
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
 // STATE & UTILS
