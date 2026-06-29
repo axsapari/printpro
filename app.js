@@ -1,119 +1,83 @@
-// ==========================================
 // KONFIGURASI SUPABASE
-// ==========================================
 const SUPABASE_URL = 'https://grguwialhmpvssqksgdp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3V3aWFsaG1wdnNzcWtzZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTcwNzIsImV4cCI6MjA5ODI3MzA3Mn0.NJaM9KzjnuOzKFpl93fzUoJ9ZIYkzP0qVXXKuZFbgc8';
 
-// Inisialisasi Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ==========================================
-// STATE & UTILS
-// ==========================================
 let currentUser = null;
-let plChartInstance = null;
 
 const formatRupiah = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
-const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 
-// ==========================================
-// AUTHENTICATION
-// ==========================================
+// LOGIN
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const email = `${username}@percetakan.com`; 
+    const email = `${username}@percetakan.com`;
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     
     if (error) {
         const errDiv = document.getElementById('login-error');
-        errDiv.textContent = 'Password salah atau akun tidak ditemukan.';
+        errDiv.textContent = 'Login gagal: ' + error.message;
         errDiv.classList.remove('hidden');
     } else {
         currentUser = { username, id: data.user.id };
         document.getElementById('login-view').classList.add('hidden-view');
         document.getElementById('app-view').classList.remove('hidden-view');
-        document.getElementById('user-name').textContent = username.charAt(0).toUpperCase() + username.slice(1);
-        document.getElementById('user-avatar').textContent = username.charAt(0).toUpperCase();
-        
-        logActivity('login', 'User login ke sistem');
-        switchView('dashboard');
         loadDashboard();
     }
 });
 
-async function logout() {
-    await supabase.auth.signOut();
-    logActivity('logout', 'User logout');
+function logout() {
+    supabaseClient.auth.signOut();
     currentUser = null;
     document.getElementById('app-view').classList.add('hidden-view');
     document.getElementById('login-view').classList.remove('hidden-view');
-    document.getElementById('login-password').value = '';
 }
 
-// ==========================================
 // NAVIGATION
-// ==========================================
 function switchView(viewName) {
     document.querySelectorAll('.app-view-section').forEach(el => el.classList.add('hidden-view'));
     document.getElementById(`view-${viewName}`).classList.remove('hidden-view');
     
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('bg-indigo-800');
-        if(btn.dataset.target === viewName) btn.classList.add('bg-indigo-800');
-    });
-
-    if (viewName === 'kuitansi') initKuitansiForm();
+    if (viewName === 'dashboard') loadDashboard();
     if (viewName === 'modal') loadModalData();
     if (viewName === 'pl') loadPLData();
     if (viewName === 'riwayat') loadRiwayatData();
     if (viewName === 'log') loadLogData();
+    if (viewName === 'kuitansi') initKuitansiForm();
 }
 
-// ==========================================
 // DASHBOARD
-// ==========================================
 async function loadDashboard() {
-    const { data: receipts } = await supabase.from('receipts').select('total_amount').eq('receipt_type', 'asli');
+    const { data: receipts } = await supabaseClient.from('receipts').select('total_amount').eq('receipt_type', 'asli');
     const pemasukan = receipts?.reduce((sum, r) => sum + r.total_amount, 0) || 0;
 
-    const { data: expenses } = await supabase.from('expenses').select('jumlah');
-    const { data: otherExp } = await supabase.from('other_transactions').select('jumlah').eq('transaction_type', 'pengeluaran_lain');
-    
-    const totalPengeluaran = (expenses?.reduce((sum, e) => sum + e.jumlah, 0) || 0) + (otherExp?.reduce((sum, e) => sum + e.jumlah, 0) || 0);
-    const saldo = pemasukan - totalPengeluaran;
-
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    const { count } = await supabase.from('receipts').select('*', { count: 'exact', head: true }).gte('tanggal', `${currentMonth}-01`);
+    const { data: expenses } = await supabaseClient.from('expenses').select('jumlah');
+    const pengeluaran = expenses?.reduce((sum, e) => sum + e.jumlah, 0) || 0;
 
     document.getElementById('dash-pemasukan').textContent = formatRupiah(pemasukan);
-    document.getElementById('dash-pengeluaran').textContent = formatRupiah(totalPengeluaran);
-    document.getElementById('dash-saldo').textContent = formatRupiah(saldo);
-    document.getElementById('dash-orders').textContent = count || 0;
-
-    document.getElementById('dash-recent-transactions').innerHTML = '<p class="text-green-600">✅ Data berhasil dimuat dari Supabase!</p>';
+    document.getElementById('dash-pengeluaran').textContent = formatRupiah(pengeluaran);
+    document.getElementById('dash-saldo').textContent = formatRupiah(pemasukan - pengeluaran);
 }
 
-// ==========================================
 // KUITANSI
-// ==========================================
 function initKuitansiForm() {
     document.getElementById('k-tanggal').valueAsDate = new Date();
-    document.getElementById('k-nomor').value = 'INV/' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '/001';
+    document.getElementById('k-nomor').value = 'INV/' + Date.now();
     if (document.getElementById('items-container').children.length === 0) addItemRow();
 }
 
 function addItemRow() {
     const container = document.getElementById('items-container');
     const div = document.createElement('div');
-    div.className = 'flex gap-2 items-center';
+    div.className = 'flex gap-2';
     div.innerHTML = `
-        <input type="text" placeholder="Deskripsi" class="item-desc flex-1 px-3 py-2 border rounded-lg" required>
-        <input type="number" placeholder="Qty" class="item-qty w-20 px-3 py-2 border rounded-lg" value="1" min="1" oninput="calcTotal()" required>
-        <input type="number" placeholder="Harga" class="item-price w-32 px-3 py-2 border rounded-lg" oninput="calcTotal()" required>
-        <button type="button" onclick="this.parentElement.remove(); calcTotal()" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+        <input type="text" placeholder="Deskripsi" class="item-desc flex-1 border p-2 rounded" required>
+        <input type="number" placeholder="Qty" class="item-qty w-20 border p-2 rounded" value="1" oninput="calcTotal()" required>
+        <input type="number" placeholder="Harga" class="item-price w-32 border p-2 rounded" oninput="calcTotal()" required>
+        <button type="button" onclick="this.parentElement.remove(); calcTotal()" class="text-red-500">🗑️</button>
     `;
     container.appendChild(div);
 }
@@ -126,58 +90,37 @@ function calcTotal() {
         total += qty * price;
     });
     const diskon = parseFloat(document.getElementById('k-diskon').value) || 0;
-    const finalTotal = total - diskon;
-    document.getElementById('k-total').textContent = formatRupiah(finalTotal);
-    return finalTotal;
+    document.getElementById('k-total').textContent = formatRupiah(total - diskon);
+    return total - diskon;
 }
 
 document.getElementById('kuitansi-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const total = calcTotal();
-    const type = document.querySelector('input[name="receipt-type"]:checked').value;
     
     const receiptData = {
         receipt_number: document.getElementById('k-nomor').value,
-        receipt_type: type,
+        receipt_type: 'asli',
         tanggal: document.getElementById('k-tanggal').value,
         pelanggan_nama: document.getElementById('k-pelanggan').value,
         pelanggan_alamat: document.getElementById('k-alamat').value,
-        dp_amount: parseFloat(document.getElementById('k-dp').value) || 0,
-        diskon_amount: parseFloat(document.getElementById('k-diskon').value) || 0,
         total_amount: total,
-        catatan: document.getElementById('k-catatan').value,
-        created_by: currentUser.id,
-        status: total > 0 ? 'LUNAS' : 'BELUM LUNAS'
+        created_by: currentUser.id
     };
 
-    const { data: receipt, error } = await supabase.from('receipts').insert(receiptData).select().single();
+    const { data: receipt, error } = await supabaseClient.from('receipts').insert(receiptData).select().single();
     
     if (error) {
-        alert('Gagal menyimpan: ' + error.message);
+        alert('Error: ' + error.message);
         return;
     }
 
-    const items = [];
-    document.querySelectorAll('#items-container > div').forEach((row, index) => {
-        items.push({
-            receipt_id: receipt.id,
-            nomor_urut: index + 1,
-            deskripsi: row.querySelector('.item-desc').value,
-            qty: parseFloat(row.querySelector('.item-qty').value),
-            harga_satuan: parseFloat(row.querySelector('.item-price').value)
-        });
-    });
-    if (items.length > 0) await supabase.from('receipt_items').insert(items);
-
-    logActivity('kuitansi', `Membuat kuitansi ${receipt.receipt_number}`);
-    alert('Kuitansi berhasil disimpan!');
+    alert('Kuitansi tersimpan!');
     e.target.reset();
     initKuitansiForm();
 });
 
-// ==========================================
-// MODAL & PENGELUARAN
-// ==========================================
+// MODAL
 document.getElementById('modal-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = {
@@ -188,152 +131,54 @@ document.getElementById('modal-form').addEventListener('submit', async (e) => {
         keterangan: document.getElementById('m-keterangan').value,
         created_by: currentUser.id
     };
-    await supabase.from('expenses').insert(data);
-    logActivity('modal', `Catat pengeluaran: ${data.nama_pengeluaran}`);
-    alert('Pengeluaran modal tercatat!');
+
+    await supabaseClient.from('expenses').insert(data);
+    alert('Modal tercatat!');
     e.target.reset();
     loadModalData();
 });
 
 async function loadModalData() {
-    const { data } = await supabase.from('expenses').select('*').order('tanggal', { ascending: false });
-    if (!data) return;
-    
-    let fisik = 0, ops = 0;
-    data.forEach(d => {
-        if (d.expense_type === 'modal_fisik') fisik += d.jumlah;
-        else ops += d.jumlah;
-    });
-
-    document.getElementById('modal-fisik-total').textContent = formatRupiah(fisik);
-    document.getElementById('modal-ops-total').textContent = formatRupiah(ops);
-    document.getElementById('modal-total-all').textContent = formatRupiah(fisik + ops);
-
-    document.getElementById('modal-list').innerHTML = data.map(d => `
-        <div class="flex justify-between p-3 border-b">
-            <div>
-                <p class="font-medium">${d.nama_pengeluaran}</p>
-                <p class="text-sm text-slate-500">${formatDate(d.tanggal)} - ${d.keterangan || '-'}</p>
-            </div>
-            <span class="font-bold text-red-600">${formatRupiah(d.jumlah)}</span>
+    const { data } = await supabaseClient.from('expenses').select('*').order('tanggal', { ascending: false });
+    document.getElementById('modal-list').innerHTML = data?.map(d => `
+        <div class="p-3 border-b">
+            <p class="font-bold">${d.nama_pengeluaran}</p>
+            <p class="text-sm text-slate-500">${formatRupiah(d.jumlah)} - ${d.tanggal}</p>
         </div>
-    `).join('');
+    `).join('') || 'Belum ada data';
 }
 
-// ==========================================
-// UNTUNG RUGI
-// ==========================================
-document.getElementById('other-trans-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-        transaction_type: document.getElementById('ot-jenis').value,
-        tanggal: new Date().toISOString().slice(0,10),
-        jenis: document.getElementById('ot-nama').value,
-        jumlah: parseFloat(document.getElementById('ot-jumlah').value),
-        created_by: currentUser.id
-    };
-    await supabase.from('other_transactions').insert(data);
-    logActivity('pl', `Catat transaksi lain: ${data.jenis}`);
-    e.target.reset();
-    loadPLData();
-});
-
+// PL
 async function loadPLData() {
-    const { data: receipts } = await supabase.from('receipts').select('total_amount').eq('receipt_type', 'asli');
-    const { data: expenses } = await supabase.from('expenses').select('jumlah, expense_type');
-    const { data: others } = await supabase.from('other_transactions').select('jumlah, transaction_type');
-
-    const pemasukanAsli = receipts?.reduce((s, r) => s + r.total_amount, 0) || 0;
-    const pemasukanLain = others?.filter(o => o.transaction_type === 'pemasukan_lain').reduce((s, o) => s + o.jumlah, 0) || 0;
+    const { data: receipts } = await supabaseClient.from('receipts').select('total_amount');
+    const { data: expenses } = await supabaseClient.from('expenses').select('jumlah');
     
-    const modalFisik = expenses?.filter(e => e.expense_type === 'modal_fisik').reduce((s, e) => s + e.jumlah, 0) || 0;
-    const modalOps = expenses?.filter(e => e.expense_type === 'modal_operasional').reduce((s, e) => s + e.jumlah, 0) || 0;
-    const pengeluaranLain = others?.filter(o => o.transaction_type === 'pengeluaran_lain').reduce((s, o) => s + o.jumlah, 0) || 0;
-
-    const subIn = pemasukanAsli + pemasukanLain;
-    const subOut = modalFisik + modalOps + pengeluaranLain;
-
-    document.getElementById('pl-pemasukan-asli').textContent = formatRupiah(pemasukanAsli);
-    document.getElementById('pl-pemasukan-lain').textContent = formatRupiah(pemasukanLain);
-    document.getElementById('pl-sub-pemasukan').textContent = formatRupiah(subIn);
-    document.getElementById('pl-modal-fisik').textContent = formatRupiah(modalFisik);
-    document.getElementById('pl-modal-ops').textContent = formatRupiah(modalOps);
-    document.getElementById('pl-pengeluaran-lain').textContent = formatRupiah(pengeluaranLain);
-    document.getElementById('pl-sub-pengeluaran').textContent = formatRupiah(subOut);
-    document.getElementById('pl-laba-bersih').textContent = formatRupiah(subIn - subOut);
-
-    renderPLChart();
-}
-
-function renderPLChart() {
-    const ctx = document.getElementById('pl-chart').getContext('2d');
-    if (plChartInstance) plChartInstance.destroy();
+    const pemasukan = receipts?.reduce((s, r) => s + r.total_amount, 0) || 0;
+    const pengeluaran = expenses?.reduce((s, e) => s + e.jumlah, 0) || 0;
     
-    plChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
-            datasets: [{
-                label: 'Pemasukan',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: 'rgb(34, 197, 94)',
-                tension: 0.1
-            }, {
-                label: 'Pengeluaran',
-                data: [2, 3, 20, 5, 1, 4],
-                borderColor: 'rgb(239, 68, 68)',
-                tension: 0.1
-            }]
-        }
-    });
+    document.getElementById('pl-pemasukan').textContent = formatRupiah(pemasukan);
+    document.getElementById('pl-pengeluaran').textContent = formatRupiah(pengeluaran);
+    document.getElementById('pl-laba').textContent = formatRupiah(pemasukan - pengeluaran);
 }
 
-// ==========================================
-// LOG AKTIVITAS
-// ==========================================
-async function logActivity(action, details) {
-    if (!currentUser) return;
-    await supabase.from('activity_logs').insert({
-        user_id: currentUser.id,
-        username: currentUser.username,
-        action,
-        details: { message: details }
-    });
-}
-
-async function loadLogData() {
-    const { data } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(50);
-    document.getElementById('log-list').innerHTML = data?.map(l => `
-        <div class="flex justify-between p-3 border-b text-sm">
-            <div>
-                <span class="font-bold text-indigo-600">[${l.username}]</span> 
-                <span class="font-medium">${l.action}</span>
-                <p class="text-slate-500">${l.details?.message || '-'}</p>
-            </div>
-            <span class="text-slate-400">${new Date(l.created_at).toLocaleString('id-ID')}</span>
+// RIWAYAT
+async function loadRiwayatData() {
+    const { data } = await supabaseClient.from('receipts').select('*').order('tanggal', { ascending: false });
+    document.getElementById('riwayat-list').innerHTML = data?.map(d => `
+        <div class="p-3 border-b">
+            <p class="font-bold">${d.receipt_number}</p>
+            <p class="text-sm">${d.pelanggan_nama} - ${formatRupiah(d.total_amount)}</p>
         </div>
-    `).join('') || 'Belum ada log.';
+    `).join('') || 'Belum ada kuitansi';
 }
 
-// ==========================================
-// BACKUP & RESTORE
-// ==========================================
-async function backupData(type) {
-    let dataToBackup = {};
-    if (type === 'all' || type === 'kuitansi') {
-        const { data: receipts } = await supabase.from('receipts').select('*, receipt_items(*)');
-        dataToBackup.receipts = receipts;
-    }
-    
-    const blob = new Blob([JSON.stringify(dataToBackup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `backup_${type}_${Date.now()}.json`;
-    a.click();
-}
-
-function printReceipt() {
-    alert('Fitur cetak akan membuka dialog print browser.');
-    window.print();
+// LOG
+async function loadLogData() {
+    const { data } = await supabaseClient.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(20);
+    document.getElementById('log-list').innerHTML = data?.map(d => `
+        <div class="p-3 border-b text-sm">
+            <p><b>${d.username}</b> - ${d.action}</p>
+            <p class="text-slate-500">${new Date(d.created_at).toLocaleString('id-ID')}</p>
+        </div>
+    `).join('') || 'Belum ada log';
 }
