@@ -1,10 +1,11 @@
 // ==========================================
-// KONFIGURASI SUPABASE (GANTI DENGAN MILIK ANDA)
+// KONFIGURASI SUPABASE
 // ==========================================
-const SUPABASE_URL = 'https://grguwialhmpvssqksgdp.supabase.co'; // Ganti ini
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3V3aWFsaG1wdnNzcWtzZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTcwNzIsImV4cCI6MjA5ODI3MzA3Mn0.NJaM9KzjnuOzKFpl93fzUoJ9ZIYkzP0qVXXKuZFbgc8'; // Ganti ini
+const SUPABASE_URL = 'https://grguwialhmpvssqksgdp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyZ3V3aWFsaG1wdnNzcWtzZ2RwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2OTcwNzIsImV4cCI6MjA5ODI3MzA3Mn0.NJaM9KzjnuOzKFpl93fzUoJ9ZIYkzP0qVXXKuZFbgc8';
 
-let supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Inisialisasi Supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==========================================
 // STATE & UTILS
@@ -22,7 +23,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const email = `${username}@percetakan.com`; // Trik login username
+    const email = `${username}@percetakan.com`; 
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
@@ -64,7 +65,6 @@ function switchView(viewName) {
         if(btn.dataset.target === viewName) btn.classList.add('bg-indigo-800');
     });
 
-    // Load data spesifik view
     if (viewName === 'kuitansi') initKuitansiForm();
     if (viewName === 'modal') loadModalData();
     if (viewName === 'pl') loadPLData();
@@ -76,18 +76,15 @@ function switchView(viewName) {
 // DASHBOARD
 // ==========================================
 async function loadDashboard() {
-    // Fetch Pemasukan (Kuitansi Asli)
     const { data: receipts } = await supabase.from('receipts').select('total_amount').eq('receipt_type', 'asli');
     const pemasukan = receipts?.reduce((sum, r) => sum + r.total_amount, 0) || 0;
 
-    // Fetch Pengeluaran (Modal + Lain)
     const { data: expenses } = await supabase.from('expenses').select('jumlah');
     const { data: otherExp } = await supabase.from('other_transactions').select('jumlah').eq('transaction_type', 'pengeluaran_lain');
     
     const totalPengeluaran = (expenses?.reduce((sum, e) => sum + e.jumlah, 0) || 0) + (otherExp?.reduce((sum, e) => sum + e.jumlah, 0) || 0);
     const saldo = pemasukan - totalPengeluaran;
 
-    // Order Bulan Ini
     const currentMonth = new Date().toISOString().slice(0, 7);
     const { count } = await supabase.from('receipts').select('*', { count: 'exact', head: true }).gte('tanggal', `${currentMonth}-01`);
 
@@ -96,7 +93,7 @@ async function loadDashboard() {
     document.getElementById('dash-saldo').textContent = formatRupiah(saldo);
     document.getElementById('dash-orders').textContent = count || 0;
 
-    document.getElementById('dash-recent-transactions').innerHTML = '<p class="text-green-600">Data berhasil dimuat dari Supabase!</p>';
+    document.getElementById('dash-recent-transactions').innerHTML = '<p class="text-green-600">✅ Data berhasil dimuat dari Supabase!</p>';
 }
 
 // ==========================================
@@ -104,7 +101,7 @@ async function loadDashboard() {
 // ==========================================
 function initKuitansiForm() {
     document.getElementById('k-tanggal').valueAsDate = new Date();
-    document.getElementById('k-nomor').value = 'INV/' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '/001'; // Simple auto number
+    document.getElementById('k-nomor').value = 'INV/' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '/001';
     if (document.getElementById('items-container').children.length === 0) addItemRow();
 }
 
@@ -160,7 +157,6 @@ document.getElementById('kuitansi-form').addEventListener('submit', async (e) =>
         return;
     }
 
-    // Insert Items
     const items = [];
     document.querySelectorAll('#items-container > div').forEach((row, index) => {
         items.push({
@@ -192,7 +188,6 @@ document.getElementById('modal-form').addEventListener('submit', async (e) => {
         keterangan: document.getElementById('m-keterangan').value,
         created_by: currentUser.id
     };
-
     await supabase.from('expenses').insert(data);
     logActivity('modal', `Catat pengeluaran: ${data.nama_pengeluaran}`);
     alert('Pengeluaran modal tercatat!');
@@ -203,7 +198,7 @@ document.getElementById('modal-form').addEventListener('submit', async (e) => {
 async function loadModalData() {
     const { data } = await supabase.from('expenses').select('*').order('tanggal', { ascending: false });
     if (!data) return;
-
+    
     let fisik = 0, ops = 0;
     data.forEach(d => {
         if (d.expense_type === 'modal_fisik') fisik += d.jumlah;
@@ -244,7 +239,6 @@ document.getElementById('other-trans-form').addEventListener('submit', async (e)
 });
 
 async function loadPLData() {
-    // Simplified PL logic
     const { data: receipts } = await supabase.from('receipts').select('total_amount').eq('receipt_type', 'asli');
     const { data: expenses } = await supabase.from('expenses').select('jumlah, expense_type');
     const { data: others } = await supabase.from('other_transactions').select('jumlah, transaction_type');
@@ -268,7 +262,6 @@ async function loadPLData() {
     document.getElementById('pl-sub-pengeluaran').textContent = formatRupiah(subOut);
     document.getElementById('pl-laba-bersih').textContent = formatRupiah(subIn - subOut);
 
-    // Render Chart
     renderPLChart();
 }
 
@@ -276,7 +269,6 @@ function renderPLChart() {
     const ctx = document.getElementById('pl-chart').getContext('2d');
     if (plChartInstance) plChartInstance.destroy();
     
-    // Dummy data for chart (bisa diganti dengan query group by month)
     plChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -300,9 +292,10 @@ function renderPLChart() {
 // LOG AKTIVITAS
 // ==========================================
 async function logActivity(action, details) {
+    if (!currentUser) return;
     await supabase.from('activity_logs').insert({
-        user_id: currentUser?.id,
-        username: currentUser?.username,
+        user_id: currentUser.id,
+        username: currentUser.username,
         action,
         details: { message: details }
     });
@@ -323,7 +316,7 @@ async function loadLogData() {
 }
 
 // ==========================================
-// BACKUP & RESTORE (Simplified)
+// BACKUP & RESTORE
 // ==========================================
 async function backupData(type) {
     let dataToBackup = {};
@@ -340,8 +333,7 @@ async function backupData(type) {
     a.click();
 }
 
-// Helper untuk print (bisa dikembangkan dengan window.print)
 function printReceipt() {
-    alert('Fitur cetak akan membuka dialog print browser. Pastikan preview sudah benar.');
+    alert('Fitur cetak akan membuka dialog print browser.');
     window.print();
 }
