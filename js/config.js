@@ -1,3 +1,18 @@
+// ================================================================
+// KONFIGURASI SUPABASE BAWAAN — berlaku untuk SEMUA perangkat.
+// Jika diisi, perangkat baru langsung terhubung tanpa wizard setup.
+//
+// Isi HANYA dengan Project URL dan kunci "anon" / "publishable"
+// (Supabase → Project Settings → API). Kunci ini memang publik dan
+// dibatasi oleh Row Level Security.
+// JANGAN PERNAH mengisi kunci service_role / secret di sini.
+// Format baris di bawah dibaca juga oleh scripts/keepalive.mjs.
+// ================================================================
+const SUPABASE_DEFAULT = {
+  url: '',
+  key: ''
+};
+
 // Daftar akun (tampilan saja). Password TIDAK disimpan di kode:
 // akun & password dikelola di Supabase → Authentication → Users.
 // Peran (role) dibaca dari app_metadata.role di token login (lihat sql/001_amankan_role.sql).
@@ -138,4 +153,23 @@ on conflict do nothing;
 
 -- 5. BERI PERAN KE AKUN (buat dulu akun di Authentication → Users)
 update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"admin"}'::jsonb where email = 'admin@printmanager.local';
-update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"owner"}'::jsonb where email in ('agus@printmanager.local','arko@printmanager.local');`;
+update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data,'{}'::jsonb) || '{"role":"owner"}'::jsonb where email in ('agus@printmanager.local','arko@printmanager.local');
+
+-- 6. KEEP-ALIVE (mencegah project free tier ter-pause karena jarang dipakai)
+create table if not exists pm_heartbeat (
+  id        int primary key default 1 check (id = 1),
+  last_ping timestamptz not null default now()
+);
+alter table pm_heartbeat enable row level security;  -- tanpa policy: tertutup untuk akses langsung
+
+create or replace function ping_keepalive()
+returns timestamptz language plpgsql security definer set search_path = public as $$
+declare t timestamptz := now();
+begin
+  insert into pm_heartbeat (id, last_ping) values (1, t)
+  on conflict (id) do update set last_ping = excluded.last_ping;
+  return t;
+end;
+$$;
+revoke all on function ping_keepalive() from public;
+grant execute on function ping_keepalive() to anon, authenticated;`;

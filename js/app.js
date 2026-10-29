@@ -123,11 +123,28 @@ let rows          = [];    // Baris item di form kuitansi
 //  SUPABASE — INISIALISASI & CONFIG
 // ================================================================
 
+// Konfigurasi bawaan dari js/config.js (SUPABASE_DEFAULT). Bila ada, dipakai di semua perangkat.
+function hasDefaultSbConfig() {
+  return typeof SUPABASE_DEFAULT !== 'undefined' && !!(SUPABASE_DEFAULT.url && SUPABASE_DEFAULT.key);
+}
+
 function getSbConfig() {
+  if (hasDefaultSbConfig()) return { url: SUPABASE_DEFAULT.url, key: SUPABASE_DEFAULT.key };
   try {
     const c = localStorage.getItem('pm_sb_cfg2');
     return c ? JSON.parse(c) : null;
   } catch (e) { return null; }
+}
+
+// Kunci service_role / secret memberi akses penuh ke database dan TIDAK boleh ada di browser.
+function kunciTerlarang(key) {
+  if (/^sb_secret_/.test(key)) return true;
+  try {
+    const part = String(key).split('.')[1];
+    if (!part) return false;
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return json.role === 'service_role';
+  } catch (e) { return false; }
 }
 
 function saveSbConfig(url, key) {
@@ -140,6 +157,11 @@ function initSupabase(url, key) {
   _lastInitError = null;
   if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
     _lastInitError = 'Library Supabase (window.supabase) belum termuat. Coba refresh halaman.';
+    console.error('initSupabase:', _lastInitError);
+    return false;
+  }
+  if (kunciTerlarang(key)) {
+    _lastInitError = 'Kunci ini adalah service_role/secret dan berbahaya dipakai di browser. Gunakan kunci anon/publishable.';
     console.error('initSupabase:', _lastInitError);
     return false;
   }
@@ -2288,14 +2310,17 @@ function renderSbConnStatus() {
     el.innerHTML = '<div class="sb-status sb-disconnected">❌ Supabase belum dikonfigurasi.</div>';
     return;
   }
+  const bawaan = hasDefaultSbConfig();
   el.innerHTML = `
     <div class="sb-status sb-connected">✅ Terhubung ke Supabase v2 — Supabase Auth aktif</div>
     <div style="font-size:12px;color:var(--ink3);margin-top:8px;">
       URL: <code style="color:var(--cyan);font-family:var(--mono);">${esc(cfg.url)}</code>
-      <button class="btn btn-r btn-sm" style="margin-left:10px;"
-        onclick="if(confirm('Reset konfigurasi & logout?')){
-          localStorage.removeItem('pm_sb_cfg2'); doLogout(); showSetup();
-        }">🗑 Reset Config</button>
+      ${bawaan
+        ? '<div style="margin-top:6px;">Konfigurasi diatur di <code>js/config.js</code> sehingga berlaku otomatis di semua perangkat.</div>'
+        : `<button class="btn btn-r btn-sm" style="margin-left:10px;"
+            onclick="if(confirm('Reset konfigurasi & logout?')){
+              localStorage.removeItem('pm_sb_cfg2'); doLogout(); showSetup();
+            }">🗑 Reset Config</button>`}
     </div>`;
 }
 
@@ -2450,6 +2475,12 @@ function renderBackupInfo() {
   applyTheme();
   applysidebar();
 
+  // Konfigurasi bawaan aktif → tautan "Ubah konfigurasi" tidak diperlukan
+  if (hasDefaultSbConfig()) {
+    const lnk = document.getElementById('btn-cfg-link');
+    if (lnk) lnk.style.display = 'none';
+  }
+
   // Cek apakah konfigurasi Supabase sudah ada
   const cfg = getSbConfig();
   if (!cfg) {
@@ -2463,6 +2494,7 @@ function renderBackupInfo() {
   if (lmsg) lmsg.textContent = 'Menghubungkan ke Supabase...';
   if (!initSupabase(cfg.url, cfg.key)) {
     hideLoading();
+    if (_lastInitError) showToast('Konfigurasi Ditolak', _lastInitError, '⛔', 0);
     document.getElementById('setup-wrap').style.display = 'flex';
     return;
   }

@@ -1,0 +1,38 @@
+name: Supabase keep-alive
+
+# Menjaga project Supabase free tier tidak ter-pause (dijeda setelah ~7 hari tanpa aktivitas).
+# Berjalan Senin & Kamis 03:17 UTC (10:17 WIB) → jeda terpanjang 4 hari.
+on:
+  schedule:
+    - cron: '17 3 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # hanya dipakai langkah commit-kosong di bawah
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ping Supabase
+        run: node scripts/keepalive.mjs
+
+      # GitHub menonaktifkan workflow terjadwal di repo publik yang tidak ada aktivitas 60 hari.
+      # Bila commit terakhir sudah > 45 hari, buat 1 commit kosong supaya workflow tetap hidup.
+      - name: Jaga workflow tetap aktif
+        run: |
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          if [ $(( (now - last) / 86400 )) -ge 45 ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "chore: commit kosong agar workflow keep-alive tidak dinonaktifkan GitHub"
+            git push
+          fi
