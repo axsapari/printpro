@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PrintManager Pro v2</title>
-<link rel="stylesheet" href="css/style.css?v=20261029">
+<script>
+/* Terapkan tema tersimpan sebelum halaman digambar agar tidak berkedip */
+try {
+  var _t = localStorage.getItem('pm_theme') || 'gelap';
+  if (_t === 'dark') _t = 'gelap'; if (_t === 'light') _t = 'terang';
+  var _terang = { terang: 1, kopi: 1, langit: 1 };
+  var _r = document.documentElement;
+  _r.setAttribute('data-tema', _t);
+  if (_terang[_t]) _r.classList.add('light');
+} catch (e) {}
+</script>
+<link rel="stylesheet" href="css/style.css?v=20261030">
 </head>
 <body>
 
@@ -29,6 +40,16 @@
   <div id="loading-msg" style="color:#6e747d;font-size:12px;max-width:400px;">Memuat aplikasi...</div>
   <div id="loading-debug" style="color:#46494f;font-size:10px;font-family:monospace;max-width:450px;line-height:1.6;"></div>
   <style>@keyframes ld{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}</style>
+</div>
+
+<!-- MODAL PILIH TEMA -->
+<div class="overlay no-print" id="modal-tema" style="display:none;" onclick="if(event.target===this)tutupTema()">
+  <div class="overlay-box">
+    <div class="overlay-h"><span>🎨 Pilih Tema Tampilan</span>
+      <button class="overlay-close" onclick="tutupTema()">×</button></div>
+    <div class="tema-grid" id="tema-grid"></div>
+    <div class="alert-i" style="margin-top:12px;">Tema tersimpan di perangkat ini. Struk dan PDF kuitansi tetap berwarna putih agar siap cetak.</div>
+  </div>
 </div>
 
 <!-- MODAL BATALKAN KUITANSI -->
@@ -196,7 +217,7 @@
         </div>
       </div>
       <div class="sb-actions">
-        <button class="sb-action-btn" onclick="toggleTheme()" title="Ganti tema">
+        <button class="sb-action-btn" onclick="bukaTema()" title="Pilih tema">
           <span id="theme-ico">🌙</span><span>Tema</span>
         </button>
         <button class="sb-action-btn" onclick="toggleNotif()" title="Notifikasi">

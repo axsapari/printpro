@@ -53,6 +53,10 @@ Jalankan `sql/003_edit_batal_piutang.sql` di Supabase SQL Editor (aman dijalanka
 
 Riwayat punya pencarian (nomor, pelanggan, alamat, catatan, status), filter tanggal dari–sampai, filter jenis (termasuk Piutang/Dibatalkan), dan halaman 20 data. Urutan: tanggal terbaru dulu.
 
+## Tema tampilan
+
+Tombol **Tema** di sidebar membuka pilihan 7 tema: Gelap (bawaan), Terang, Samudra, Hutan, Senja, Kopi, dan Langit. Pilihan tersimpan per perangkat. Struk dan PDF kuitansi selalu putih agar siap cetak. Tema baru cukup ditambah di `TEMA` (`js/app.js`) dan blok `html[data-tema="..."]` di `css/style.css`, serta daftar tema terang di skrip kecil pada `<head>` `index.html`.
+
 ## Keamanan
 
 - Peran (`admin` / `owner`) dibaca dari `app_metadata` di token login, bukan dari `user_metadata` (yang bisa diubah pengguna sendiri).

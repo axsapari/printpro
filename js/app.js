@@ -1065,24 +1065,62 @@ function applysidebar() {
 // ================================================================
 //  2. TEMA TERANG / GELAP
 // ================================================================
-let _theme = localStorage.getItem('pm_theme') || 'dark';
+const TEMA = [
+  { id: 'gelap',   nama: 'Gelap',   ico: '🌙', terang: false, ket: 'Biru, bawaan',   w: ['#0f1623', '#1a2438', '#3b82f6'] },
+  { id: 'terang',  nama: 'Terang',  ico: '☀️', terang: true,  ket: 'Biru, cerah',    w: ['#f0f4fa', '#ffffff', '#2563eb'] },
+  { id: 'samudra', nama: 'Samudra', ico: '🌊', terang: false, ket: 'Hijau toska',    w: ['#07181f', '#0f2a35', '#14b8a6'] },
+  { id: 'hutan',   nama: 'Hutan',   ico: '🌲', terang: false, ket: 'Hijau alam',     w: ['#0e1a12', '#182b1e', '#4ade80'] },
+  { id: 'senja',   nama: 'Senja',   ico: '🌆', terang: false, ket: 'Ungu & merah muda', w: ['#1a1020', '#2b1a33', '#f472b6'] },
+  { id: 'kopi',    nama: 'Kopi',    ico: '☕', terang: true,  ket: 'Krem hangat',    w: ['#f6f0e8', '#fffaf3', '#b45309'] },
+  { id: 'langit',  nama: 'Langit',  ico: '🌤️', terang: true,  ket: 'Biru muda',      w: ['#eef6ff', '#ffffff', '#0284c7'] }
+];
+
+function temaTersimpan() {
+  let t = 'gelap';
+  try { t = localStorage.getItem('pm_theme') || 'gelap'; } catch (e) {}
+  if (t === 'dark') t = 'gelap';
+  if (t === 'light') t = 'terang';
+  return TEMA.some(x => x.id === t) ? t : 'gelap';
+}
+let _theme = temaTersimpan();
 
 function applyTheme() {
-  if (_theme === 'light') {
-    document.documentElement.classList.add('light');
-  } else {
-    document.documentElement.classList.remove('light');
-  }
+  const def = TEMA.find(x => x.id === _theme) || TEMA[0];
+  const root = document.documentElement;
+  root.setAttribute('data-tema', def.id);
+  root.classList.toggle('light', def.terang);
   const ico = document.getElementById('theme-ico');
-  if (ico) ico.textContent = _theme === 'light' ? '☀️' : '🌙';
+  if (ico) ico.textContent = def.ico;
 }
 
-function toggleTheme() {
-  _theme = _theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem('pm_theme', _theme);
+function setTema(id, diam) {
+  const def = TEMA.find(x => x.id === id);
+  if (!def) return;
+  _theme = id;
+  try { localStorage.setItem('pm_theme', id); } catch (e) {}
   applyTheme();
-  showToast(_theme === 'light' ? 'Tema Terang' : 'Tema Gelap',
-    'Tampilan berhasil diubah.', _theme === 'light' ? '☀️' : '🌙', 2000);
+  renderTemaGrid();
+  if (!diam) showToast('Tema ' + def.nama, 'Tampilan berhasil diubah.', def.ico, 2000);
+}
+
+function renderTemaGrid() {
+  const g = document.getElementById('tema-grid');
+  if (!g) return;
+  g.innerHTML = TEMA.map(t => `
+    <button class="tema-opt ${t.id === _theme ? 'aktif' : ''}" data-tema-id="${t.id}" onclick="setTema('${t.id}', true)">
+      <div class="tema-prev"><i style="width:34%;background:${t.w[1]}"></i><i style="width:40%;background:${t.w[0]}"></i><i style="width:26%;background:${t.w[2]}"></i></div>
+      <div class="tema-nama"><span>${t.ico} ${esc(t.nama)}</span>${t.id === _theme ? '<span>✓</span>' : ''}</div>
+      <div class="tema-ket">${esc(t.ket)}</div>
+    </button>`).join('');
+}
+
+function bukaTema()  { renderTemaGrid(); document.getElementById('modal-tema').style.display = 'flex'; }
+function tutupTema() { document.getElementById('modal-tema').style.display = 'none'; }
+
+// Kompatibilitas: berpindah ke tema berikutnya
+function toggleTheme() {
+  const i = TEMA.findIndex(x => x.id === _theme);
+  setTema(TEMA[(i + 1) % TEMA.length].id);
 }
 
 // ================================================================

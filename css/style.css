@@ -547,3 +547,69 @@ html.light .theme-icon.sun{opacity:1;}
 .rw-info{font-size:11px;opacity:.75;margin:0 0 8px;}
 .rw-pager{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:12px;}
 .rw-pager:empty{display:none;}
+
+/* ================================================================
+   TEMA TAMBAHAN — dipilih lewat <html data-tema="...">
+   Tema bermode terang juga menambah class "light" (lihat applyTheme).
+   Struk/kuitansi selalu putih agar siap cetak, apa pun temanya.
+   ================================================================ */
+html[data-tema="samudra"]{
+  --bg:#07181f;--bg2:#0b2029;--surf:#0f2a35;--surf2:#133441;--surf3:#183f4e;
+  --brd:#1f4a5b;--brd2:#2a6178;
+  --ink:#e6f4f7;--ink2:#a9cdd6;--ink3:#6a9aa8;
+  --blue:#14b8a6;--blue-d:#0d9488;--blue-l:rgba(20,184,166,.14);--blue-m:rgba(20,184,166,.32);
+  --login-bg:radial-gradient(ellipse at 40% 35%,#0f4452 0%,#06141a 65%);
+  --app-bg:radial-gradient(ellipse at 20% 0%,#0c3140 0%,#06141a 60%);
+}
+html[data-tema="hutan"]{
+  --bg:#0e1a12;--bg2:#132218;--surf:#182b1e;--surf2:#1e3626;--surf3:#25422f;
+  --brd:#2d4c37;--brd2:#3b6448;
+  --ink:#e9f3ea;--ink2:#b3cdb7;--ink3:#759a7e;
+  --blue:#4ade80;--blue-d:#22c55e;--blue-l:rgba(74,222,128,.13);--blue-m:rgba(74,222,128,.3);
+  --login-bg:radial-gradient(ellipse at 40% 35%,#1b4a2a 0%,#08130c 65%);
+  --app-bg:radial-gradient(ellipse at 20% 0%,#15361f 0%,#08130c 60%);
+}
+html[data-tema="senja"]{
+  --bg:#1a1020;--bg2:#221429;--surf:#2b1a33;--surf2:#34213d;--surf3:#3f2a4a;
+  --brd:#4d3358;--brd2:#654478;
+  --ink:#f5eaf7;--ink2:#cdb4d4;--ink3:#957aa0;
+  --blue:#f472b6;--blue-d:#ec4899;--blue-l:rgba(244,114,182,.14);--blue-m:rgba(244,114,182,.32);
+  --orange:#fb923c;
+  --login-bg:radial-gradient(ellipse at 40% 35%,#4a1f55 0%,#12081a 65%);
+  --app-bg:radial-gradient(ellipse at 20% 0%,#3a1a45 0%,#12081a 60%);
+}
+html[data-tema="kopi"]{
+  --bg:#f6f0e8;--bg2:#eee5d8;--surf:#fffaf3;--surf2:#faf3e8;--surf3:#f1e7d8;
+  --brd:#e0d2bd;--brd2:#cdb99c;
+  --ink:#3a2a1c;--ink2:#6b5440;--ink3:#9a8670;
+  --blue:#b45309;--blue-d:#92400e;--blue-l:rgba(180,83,9,.1);--blue-m:rgba(180,83,9,.25);
+  --green:#15803d;--red:#b91c1c;--orange:#c2410c;--violet:#7c3aed;--cyan:#0e7490;
+  --shad:0 1px 3px rgba(60,40,20,.12),0 4px 12px rgba(60,40,20,.08);
+  --login-bg:radial-gradient(ellipse at 40% 35%,#f1dcbd 0%,#f6f0e8 65%);
+  --app-bg:linear-gradient(135deg,#eee5d8 0%,#f6f0e8 100%);
+}
+html[data-tema="langit"]{
+  --bg:#eef6ff;--bg2:#e2effd;--surf:#ffffff;--surf2:#f4f9ff;--surf3:#e8f2fd;
+  --brd:#c9def5;--brd2:#a8c8ec;
+  --ink:#10283f;--ink2:#35526f;--ink3:#6f8aa6;
+  --blue:#0284c7;--blue-d:#0369a1;--blue-l:rgba(2,132,199,.1);--blue-m:rgba(2,132,199,.25);
+  --login-bg:radial-gradient(ellipse at 40% 35%,#bfe0fb 0%,#eef6ff 65%);
+  --app-bg:linear-gradient(135deg,#e2effd 0%,#eef6ff 100%);
+}
+/* teks peringatan yang berwarna pastel perlu lebih gelap di tema terang */
+html.light .setup-note,html.light .alert-i{color:var(--blue-d);}
+html.light .lerr{color:var(--red);}
+html.light .btn-pdf{color:var(--red);}
+html.light .alert-w{color:var(--orange);}
+html.light ::selection{color:#fff;}
+
+/* pemilih tema */
+.tema-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-top:4px;}
+.tema-opt{border:2px solid var(--brd);border-radius:var(--r);background:var(--surf2);padding:8px;cursor:pointer;
+  text-align:left;font-family:var(--sans);color:var(--ink);transition:border-color .15s,transform .15s;}
+.tema-opt:hover{transform:translateY(-1px);border-color:var(--brd2);}
+.tema-opt.aktif{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-m);}
+.tema-prev{height:46px;border-radius:6px;display:flex;overflow:hidden;border:1px solid rgba(128,128,128,.3);margin-bottom:7px;}
+.tema-prev i{display:block;height:100%;}
+.tema-nama{font-size:12px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+.tema-ket{font-size:10px;color:var(--ink3);margin-top:2px;}
