@@ -1,855 +1,3 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PrintManager Pro v2</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
-*{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --bg:#18191c;--bg2:#1e2023;--surf:#242629;--surf2:#2c2f33;--surf3:#313438;
-  --brd:#3a3d42;--brd2:#46494f;
-  --ink:#e8eaed;--ink2:#b0b5bf;--ink3:#6e747d;
-  --blue:#3b82f6;--blue-d:#2563eb;--blue-l:rgba(59,130,246,.12);--blue-m:rgba(59,130,246,.3);
-  --green:#22c55e;--green-l:rgba(34,197,94,.12);
-  --red:#ef4444;--red-l:rgba(239,68,68,.12);
-  --orange:#f59e0b;--orange-l:rgba(245,158,11,.12);
-  --violet:#a78bfa;--violet-l:rgba(167,139,250,.12);
-  --cyan:#22d3ee;--cyan-l:rgba(34,211,238,.12);
-  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
-  --r:10px;--rsm:7px;--max:980px;
-  --shad:0 1px 3px rgba(0,0,0,.5),0 4px 12px rgba(0,0,0,.35);
-}
-html,body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;}
-::selection{background:var(--blue-m);color:#fff;}
-::-webkit-scrollbar{width:6px;height:6px;}
-::-webkit-scrollbar-track{background:var(--bg2);}
-::-webkit-scrollbar-thumb{background:var(--brd2);border-radius:3px;}
-
-/* SETUP */
-.setup-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 40% 35%,#1a2d50 0%,#13141a 65%);padding:20px;}
-.setup-box{background:var(--surf);border:1px solid var(--brd);border-radius:16px;
-  padding:40px 36px;width:100%;max-width:480px;box-shadow:0 32px 80px rgba(0,0,0,.7);}
-.setup-brand{display:flex;align-items:center;gap:11px;margin-bottom:24px;}
-.setup-icon{width:42px;height:42px;background:var(--cyan);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(34,211,238,.4);}
-.setup-brand h1{font-size:18px;font-weight:800;color:var(--ink);}
-.setup-brand p{font-size:11px;color:var(--ink3);margin-top:1px;}
-.setup-h{font-size:20px;font-weight:800;color:var(--ink);margin-bottom:4px;}
-.setup-sub{font-size:13px;color:var(--ink3);margin-bottom:20px;line-height:1.6;}
-.step-indicator{display:flex;gap:6px;margin-bottom:20px;}
-.step-dot{width:8px;height:8px;border-radius:50%;background:var(--brd2);transition:all .2s;}
-.step-dot.active{background:var(--cyan);width:20px;border-radius:4px;}
-.step-dot.done{background:var(--green);}
-.setup-note{background:var(--blue-l);border:1px solid var(--blue-m);color:#93c5fd;
-  padding:10px 13px;border-radius:var(--rsm);font-size:12px;margin-bottom:14px;line-height:1.6;}
-.setup-note code{background:rgba(59,130,246,.2);padding:1px 5px;border-radius:3px;font-family:var(--mono);font-size:11px;}
-
-/* LOGIN */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 40% 35%,#1a2d50 0%,#13141a 65%);padding:20px;}
-.login-box{background:var(--surf);border:1px solid var(--brd);border-radius:16px;
-  padding:40px 36px;width:100%;max-width:420px;box-shadow:0 32px 80px rgba(0,0,0,.7);}
-.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:28px;}
-.login-icon{width:42px;height:42px;background:var(--blue);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(59,130,246,.4);}
-.login-brand h1{font-size:18px;font-weight:800;color:var(--ink);}
-.login-brand p{font-size:11px;color:var(--ink3);margin-top:1px;}
-.login-h{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:3px;}
-.login-sub{font-size:13px;color:var(--ink3);margin-bottom:22px;}
-.user-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
-.ucard{border:1.5px solid var(--brd);border-radius:var(--r);padding:13px 8px;
-  text-align:center;cursor:pointer;transition:all .15s;background:var(--surf2);}
-.ucard:hover{border-color:var(--blue);background:var(--blue-l);}
-.ucard.sel{border-color:var(--blue);background:var(--blue-l);box-shadow:0 0 0 3px rgba(59,130,246,.2);}
-.ucard.owner.sel{border-color:var(--violet);background:var(--violet-l);box-shadow:0 0 0 3px rgba(167,139,250,.2);}
-.uav{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:13px;font-weight:700;margin:0 auto 6px;}
-.av-a{background:rgba(59,130,246,.2);color:var(--blue);}
-.av-o{background:rgba(167,139,250,.2);color:var(--violet);}
-.ucname{font-size:12px;font-weight:700;color:var(--ink);}
-.ucrole{font-size:10px;color:var(--ink3);margin-top:1px;}
-.lerr{background:var(--red-l);border:1px solid rgba(239,68,68,.25);color:#fca5a5;
-  font-size:13px;padding:9px 12px;border-radius:var(--rsm);margin-bottom:12px;display:none;}
-.lf{margin-bottom:13px;}
-.lf label{display:block;font-size:11px;font-weight:700;color:var(--ink3);
-  margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;}
-.lf input{width:100%;padding:10px 13px;border:1.5px solid var(--brd2);border-radius:var(--rsm);
-  font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--surf2);
-  outline:none;transition:all .15s;}
-.lf input:focus{border-color:var(--blue);background:var(--surf3);}
-.lbtn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--rsm);
-  font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;transition:all .15s;
-  margin-top:4px;box-shadow:0 4px 14px rgba(59,130,246,.35);}
-.lbtn:hover{background:var(--blue-d);transform:translateY(-1px);}
-.lbtn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
-
-/* APP */
-.app{display:none;min-height:100vh;flex-direction:column;background:var(--bg);}
-.app.on{display:flex;}
-.topbar{background:var(--surf);border-bottom:1px solid var(--brd);height:54px;flex-shrink:0;}
-.topbar-inner{max-width:var(--max);margin:0 auto;height:100%;padding:0 20px;
-  display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.tb-brand{display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.tb-logo{width:30px;height:30px;background:var(--blue);border-radius:7px;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(59,130,246,.4);}
-.tb-brand h1{font-size:15px;font-weight:800;color:var(--ink);letter-spacing:-.2px;}
-.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.upill{display:flex;align-items:center;gap:7px;background:var(--surf2);border:1px solid var(--brd);
-  border-radius:20px;padding:4px 12px 4px 5px;}
-.upip{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
-  justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
-.pip-a{background:rgba(59,130,246,.2);color:var(--blue);}
-.pip-o{background:rgba(167,139,250,.2);color:var(--violet);}
-.upill-name{font-size:12px;font-weight:600;color:var(--ink);}
-.upill-role{font-size:10px;color:var(--ink3);}
-.icon-btn{background:transparent;border:1px solid var(--brd2);color:var(--ink3);
-  width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:14px;
-  display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.icon-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-l);}
-.icon-btn:disabled{opacity:.4;cursor:not-allowed;}
-.lout-btn{background:transparent;border:1px solid var(--brd2);color:var(--ink3);
-  padding:5px 12px;border-radius:20px;cursor:pointer;font-family:var(--sans);
-  font-size:11px;font-weight:500;transition:all .15s;}
-.lout-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-l);}
-/* NOTIF BELL */
-.notif-btn{position:relative;}
-.notif-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
-  font-size:9px;font-weight:700;min-width:16px;height:16px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;padding:0 3px;display:none;}
-/* SYNC BADGE */
-.sync-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
-  font-size:11px;font-weight:600;border:1px solid var(--brd2);cursor:default;transition:all .3s;}
-.sync-idle{background:var(--surf2);color:var(--ink3);border-color:var(--brd2);}
-.sync-saving{background:rgba(245,158,11,.12);color:var(--orange);border-color:rgba(245,158,11,.3);animation:pulse 1.2s infinite;}
-.sync-ok{background:rgba(34,197,94,.12);color:var(--green);border-color:rgba(34,197,94,.3);}
-.sync-err{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.3);}
-.sync-loading{background:rgba(59,130,246,.12);color:var(--blue);border-color:rgba(59,130,246,.3);animation:pulse 1.2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
-/* NAV */
-.nav-wrap{background:var(--surf);border-bottom:1px solid var(--brd);flex-shrink:0;}
-.nav{max-width:var(--max);margin:0 auto;display:flex;padding:0 16px;overflow-x:auto;scrollbar-width:none;}
-.nav::-webkit-scrollbar{display:none;}
-.nbtn{padding:13px 14px;border:none;background:transparent;cursor:pointer;font-family:var(--sans);
-  font-size:13px;font-weight:500;color:var(--ink3);white-space:nowrap;
-  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
-.nbtn:hover{color:var(--ink);}
-.nbtn.act{color:var(--blue);border-bottom-color:var(--blue);font-weight:700;}
-.owner-only{display:none;}
-.main{flex:1;overflow-y:auto;padding:20px 16px;}
-.inner{max-width:var(--max);margin:0 auto;}
-.page{display:none;}.page.on{display:block;}
-
-/* CARDS */
-.card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
-  padding:20px;margin-bottom:14px;box-shadow:var(--shad);}
-.chdr{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:16px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
-.stat-card{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
-  padding:16px;box-shadow:var(--shad);}
-.slbl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;
-  letter-spacing:.6px;margin-bottom:6px;}
-.sval{font-size:18px;font-weight:700;font-family:var(--mono);}
-.sv-g{color:var(--green);}.sv-r{color:var(--red);}.sv-b{color:var(--blue);}.sv-o{color:var(--orange);}
-
-/* FORMS */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-.fg{margin-bottom:12px;position:relative;}
-.fg label{display:block;font-size:11px;font-weight:700;color:var(--ink3);
-  margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;}
-.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;border:1px solid var(--brd2);
-  border-radius:var(--rsm);font-family:var(--sans);font-size:13px;color:var(--ink);
-  background:var(--surf2);outline:none;transition:all .15s;}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--blue);background:var(--surf3);}
-.fg select option{background:var(--surf2);}
-.fg textarea{resize:vertical;min-height:60px;line-height:1.5;}
-
-/* AUTOCOMPLETE DROPDOWN */
-.autocomplete-list{position:absolute;top:100%;left:0;right:0;z-index:100;
-  background:var(--surf3);border:1px solid var(--blue-m);border-radius:var(--rsm);
-  box-shadow:0 8px 24px rgba(0,0,0,.5);max-height:200px;overflow-y:auto;display:none;}
-.autocomplete-list.open{display:block;}
-.ac-item{padding:9px 12px;cursor:pointer;display:flex;justify-content:space-between;
-  align-items:center;border-bottom:1px solid var(--brd);font-size:13px;}
-.ac-item:last-child{border-bottom:none;}
-.ac-item:hover{background:var(--blue-l);color:var(--blue);}
-.ac-name{font-weight:500;color:var(--ink);}
-.ac-price{font-family:var(--mono);font-size:11px;color:var(--ink3);}
-.ac-item:hover .ac-name{color:var(--blue);}
-
-/* BUTTONS */
-.btn{padding:9px 16px;border-radius:var(--rsm);border:none;cursor:pointer;font-family:var(--sans);
-  font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;
-  transition:all .15s;white-space:nowrap;}
-.btn-p{background:var(--surf3);color:var(--ink);border:1px solid var(--brd2);}
-.btn-p:hover{background:var(--brd2);}
-.btn-b{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.3);}
-.btn-b:hover{background:var(--blue-d);}
-.btn-g{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.25);}
-.btn-g:hover{background:rgba(34,197,94,.25);}
-.btn-o{background:transparent;color:var(--ink2);border:1px solid var(--brd2);}
-.btn-o:hover{background:var(--surf3);color:var(--ink);}
-.btn-r{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2);
-  padding:5px 10px;font-size:11px;}
-.btn-r:hover{background:rgba(239,68,68,.25);}
-.btn-orange{background:rgba(245,158,11,.15);color:var(--orange);border:1px solid rgba(245,158,11,.25);
-  padding:5px 10px;font-size:11px;}
-.btn-orange:hover{background:rgba(245,158,11,.25);}
-.btn-sm{padding:6px 12px;font-size:12px;}
-.btn-pdf{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
-.btn-pdf:hover{background:rgba(239,68,68,.25);}
-.btn:disabled{opacity:.45;cursor:not-allowed;}
-.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
-
-/* TAGS */
-.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.3px;}
-.t-asli{background:rgba(34,197,94,.15);color:var(--green);}
-.t-fiktif{background:rgba(245,158,11,.15);color:var(--orange);}
-.t-fisik{background:rgba(59,130,246,.15);color:var(--blue);}
-.t-ops{background:rgba(245,158,11,.15);color:var(--orange);}
-.t-log{background:rgba(167,139,250,.15);color:var(--violet);}
-/* ALERTS */
-.alert-i{background:var(--blue-l);border:1px solid var(--blue-m);color:#93c5fd;
-  padding:10px 13px;border-radius:var(--rsm);font-size:12px;margin-bottom:12px;}
-.alert-w{background:var(--orange-l);border:1px solid rgba(245,158,11,.3);color:#fbbf24;
-  padding:10px 13px;border-radius:var(--rsm);font-size:12px;margin-bottom:12px;}
-
-/* LIST ROWS */
-.li-row{display:flex;align-items:center;justify-content:space-between;
-  padding:11px 0;border-bottom:1px solid var(--brd);}
-.li-row:last-child{border-bottom:none;}
-.li-l{display:flex;align-items:center;gap:11px;min-width:0;flex:1;}
-.ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
-  justify-content:center;font-size:15px;flex-shrink:0;}
-.ico-g{background:rgba(34,197,94,.15);}
-.ico-r{background:rgba(239,68,68,.15);}
-.ico-b{background:rgba(59,130,246,.15);}
-.ico-o{background:rgba(245,158,11,.15);}
-.ico-v{background:rgba(167,139,250,.15);}
-.ico-c{background:var(--cyan-l);}
-.liname{font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.limeta{font-size:11px;color:var(--ink3);margin-top:2px;}
-.liamt{font-size:13px;font-weight:700;font-family:var(--mono);flex-shrink:0;margin-left:8px;}
-.liamt.pos{color:var(--green);}.liamt.neg{color:var(--red);}
-.empty{text-align:center;padding:36px;color:var(--ink3);font-size:13px;}
-
-/* ITEMS TABLE */
-.itable{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
-.itable th{background:var(--surf2);padding:8px 10px;text-align:left;font-size:11px;
-  font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--brd);}
-.itable td{padding:5px 7px;border:1px solid var(--brd);background:var(--surf);}
-.itable tr:hover td{background:var(--surf2);}
-.itable td input{width:100%;border:none;background:transparent;font-family:var(--sans);
-  font-size:13px;color:var(--ink);outline:none;padding:2px 3px;}
-.itable td input:focus{background:var(--blue-l);border-radius:3px;}
-.td-no{width:30px;text-align:center;color:var(--ink3);font-size:12px;font-weight:600;}
-.td-qty{width:70px;}.td-hp{width:130px;}
-.td-sub{width:130px;font-family:var(--mono);font-size:12px;color:var(--ink2);text-align:right;padding-right:10px!important;}
-.td-del{width:30px;text-align:center;}
-.del-btn{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:18px;line-height:1;transition:color .15s;}
-.del-btn:hover{color:var(--red);}
-.add-row{font-size:12px;color:var(--blue);background:none;border:1px dashed var(--blue-m);
-  border-radius:var(--rsm);padding:7px 14px;cursor:pointer;font-family:var(--sans);font-weight:600;transition:all .15s;}
-.add-row:hover{background:var(--blue-l);}
-.total-box{background:var(--surf2);border-radius:var(--rsm);padding:12px 16px;
-  display:flex;justify-content:space-between;align-items:center;border:1px solid var(--brd);margin-top:10px;}
-.total-lbl{font-size:13px;color:var(--ink3);}
-.total-val{font-size:26px;font-weight:800;font-family:var(--mono);color:var(--ink);}
-
-/* P&L */
-.pl-sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
-  color:var(--ink3);padding-bottom:6px;border-bottom:1px solid var(--brd);margin-bottom:8px;margin-top:14px;}
-.pl-row{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;}
-.pl-row .pv{font-family:var(--mono);font-weight:600;}
-.pl-sub-row{display:flex;justify-content:space-between;font-size:13px;font-weight:700;
-  padding:8px 0;border-top:1px solid var(--brd);margin-top:4px;}
-.pl-sub-row .pv{font-family:var(--mono);}
-.pl-net-row{display:flex;justify-content:space-between;font-size:18px;font-weight:800;
-  padding:14px 0;border-top:2px solid var(--brd2);}
-.pl-net-row .pv{font-family:var(--mono);}
-
-/* LOG */
-.log-entry{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--brd);}
-.log-entry:last-child{border-bottom:none;}
-.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;}
-.ld-login{background:var(--violet);}
-.ld-logout{background:var(--ink3);}
-.ld-hapus{background:var(--red);}
-.ld-modal{background:var(--blue);}
-.ld-pl{background:var(--orange);}
-.ld-masuk{background:var(--green);}
-.log-main{flex:1;min-width:0;}
-.log-msg{font-size:13px;color:var(--ink);line-height:1.5;}
-.log-sub{font-size:11px;color:var(--ink3);margin-top:3px;}
-.log-who{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-right:4px;}
-.who-Admin{background:rgba(59,130,246,.2);color:var(--blue);}
-.who-Agus{background:rgba(167,139,250,.2);color:var(--violet);}
-.who-Arko{background:rgba(34,211,238,.2);color:var(--cyan);}
-.who-System{background:var(--surf3);color:var(--ink3);}
-
-/* BACKUP */
-.backup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
-.backup-item{background:var(--surf2);border:1px solid var(--brd);border-radius:var(--r);padding:16px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;}
-.backup-item-hdr{display:flex;align-items:center;gap:10px;}
-.backup-item-title{font-size:13px;font-weight:600;color:var(--ink);}
-.backup-item-desc{font-size:11px;color:var(--ink3);margin-top:2px;}
-.backup-item-actions{display:flex;gap:6px;flex-shrink:0;}
-.restore-input{display:none;}
-.bk-divider{border:none;border-top:1px solid var(--brd);margin:18px 0;}
-
-/* CHART */
-.chart-wrap{background:var(--surf2);border-radius:var(--r);padding:16px;margin-bottom:14px;}
-.chart-bars{display:flex;align-items:flex-end;gap:6px;height:160px;padding-bottom:24px;min-width:0;}
-.chart-bar-group{display:flex;flex-direction:column;align-items:center;flex:1;min-width:28px;gap:2px;height:100%;}
-.chart-bar-pair{display:flex;gap:2px;align-items:flex-end;flex:1;width:100%;}
-.chart-bar{flex:1;border-radius:3px 3px 0 0;transition:opacity .2s;cursor:default;min-width:8px;}
-.chart-bar:hover{opacity:.7;}
-.chart-bar-label{font-size:9px;color:var(--ink3);white-space:nowrap;margin-top:4px;text-align:center;}
-.chart-legend{display:flex;gap:14px;margin-top:10px;justify-content:center;}
-.chart-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);}
-.chart-legend-dot{width:10px;height:10px;border-radius:2px;}
-.chart-empty{text-align:center;padding:40px;color:var(--ink3);font-size:13px;}
-
-/* PERIOD FILTER */
-.period-filter{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
-.period-filter select,.period-filter input{padding:7px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);font-size:12px;color:var(--ink);background:var(--surf2);outline:none;}
-.period-filter label{font-size:12px;color:var(--ink3);}
-.pl-period-badge{display:inline-block;background:var(--blue-l);border:1px solid var(--blue-m);color:var(--blue);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:8px;}
-
-/* RECEIPT */
-.rc-outer{background:#fff;border:1px solid var(--brd);border-radius:var(--r);overflow:hidden;margin-top:14px;color:#111;}
-.rc-body{padding:32px 36px;font-family:'Plus Jakarta Sans',sans-serif;color:#111;}
-.rc-company-name{font-size:18px;font-weight:800;color:#111;}
-.rc-company-detail{font-size:12px;color:#555;line-height:1.8;margin-top:3px;}
-.rc-divider{border:none;border-top:1.5px solid #d1d5db;margin:14px 0;}
-.rc-title-line{text-align:center;margin:10px 0 16px;}
-.rc-title{font-size:17px;font-weight:800;letter-spacing:1.5px;color:#111;}
-.rc-fiktif-sys{display:inline-block;background:#fef3c7;color:#92400e;border:1px solid #fbbf24;
-  font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;letter-spacing:1px;vertical-align:middle;}
-.rc-two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:16px;}
-.rc-sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
-  color:#888;margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid #e5e7eb;}
-.rc-info-row{font-size:12.5px;color:#111;line-height:1.9;}
-.rc-info-label{color:#555;}
-.rc-sub-title{font-size:12px;font-weight:700;color:#111;margin:14px 0 7px;text-transform:uppercase;letter-spacing:.4px;text-decoration:underline;}
-.rc-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:16px;}
-.rc-table th{background:#f3f4f6;padding:8px 10px;border:1px solid #d1d5db;font-size:11px;font-weight:700;color:#111;}
-.rc-table th.rnum{text-align:right;}
-.rc-table td{padding:7px 10px;border:1px solid #d1d5db;color:#111;}
-.rc-table td.rnum{text-align:right;font-family:var(--mono);font-size:12px;}
-.rc-table tbody tr:nth-child(even){background:#f9fafb;}
-.rc-table tfoot td{font-weight:700;font-size:13px;background:#f3f4f6;}
-.rc-table tfoot td.rnum{font-family:var(--mono);}
-.rc-bottom{display:flex;justify-content:space-between;align-items:flex-start;margin-top:8px;}
-.rc-catatan-title{font-size:11px;font-weight:700;color:#111;margin-bottom:4px;text-decoration:underline;}
-.rc-catatan-text{font-size:12px;color:#555;max-width:260px;}
-.rc-ttd{text-align:center;}
-.rc-ttd-place{font-size:12px;color:#555;margin-bottom:32px;}
-.rc-ttd-line{border-top:1px solid #111;width:170px;margin:0 auto 4px;}
-.rc-ttd-lbl{font-size:11px;color:#555;}
-.rc-thanks{text-align:center;font-style:italic;font-size:12px;color:#888;margin-top:20px;padding-top:14px;border-top:1px dashed #d1d5db;}
-
-/* TEMPLATE MANAGER */
-.tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:8px;}
-.tmpl-card{background:var(--surf2);border:1px solid var(--brd);border-radius:var(--rsm);
-  padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.tmpl-name{font-size:13px;font-weight:500;color:var(--ink);}
-.tmpl-price{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-top:2px;}
-
-/* MODAL OVERLAY (for image/preview) */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;
-  display:flex;align-items:center;justify-content:center;padding:20px;}
-.overlay-box{background:var(--surf);border:1px solid var(--brd);border-radius:var(--r);
-  padding:24px;max-width:500px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.7);}
-.overlay-h{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:14px;
-  display:flex;align-items:center;justify-content:space-between;}
-.overlay-close{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:20px;
-  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
-  border-radius:6px;transition:all .15s;}
-.overlay-close:hover{background:var(--red-l);color:var(--red);}
-
-/* SB STATUS */
-.sb-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--rsm);
-  font-size:12px;font-weight:600;margin-bottom:14px;}
-.sb-connected{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green);}
-.sb-disconnected{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red);}
-
-/* NOTIF TOAST */
-.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
-.toast{background:var(--surf3);border:1px solid var(--brd2);border-radius:var(--r);
-  padding:12px 16px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,.6);
-  pointer-events:all;display:flex;align-items:flex-start;gap:10px;
-  animation:slideIn .25s ease;transition:opacity .3s;}
-.toast-ico{font-size:18px;flex-shrink:0;margin-top:1px;}
-.toast-body{flex:1;}
-.toast-title{font-size:13px;font-weight:700;color:var(--ink);}
-.toast-msg{font-size:12px;color:var(--ink3);margin-top:2px;}
-.toast-close{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;flex-shrink:0;margin-top:-2px;}
-.toast.toast-out{opacity:0;}
-@keyframes slideIn{from{transform:translateX(110%);opacity:0;}to{transform:translateX(0);opacity:1;}}
-
-@media print{
-  .no-print{display:none!important;}
-  body{background:#fff!important;}
-  .main{padding:0!important;}
-  .inner{max-width:100%!important;}
-  .rc-outer{border:none!important;border-radius:0!important;margin:0!important;}
-  .rc-body{padding:20px!important;}
-  @page{margin:10mm;}
-}
-@media(max-width:640px){
-  .stats{grid-template-columns:1fr 1fr;}
-  .g2,.g3{grid-template-columns:1fr;}
-  .backup-grid{grid-template-columns:1fr;}
-  .rc-two-col{grid-template-columns:1fr;}
-  .topbar-inner{padding:0 12px;}
-  .sync-badge{display:none;}
-  .upill-role{display:none;}
-}
-</style>
-</head>
-<body>
-
-<!-- LOADING SCREEN — tampil via CSS, disembunyikan oleh JS saat siap -->
-<div id="loading-screen" style="
-  position:fixed;inset:0;z-index:9999;
-  background:#18191c;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  font-family:'Plus Jakarta Sans',sans-serif;padding:20px;text-align:center;">
-  <div style="
-    width:48px;height:48px;background:#3b82f6;border-radius:12px;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 4px 20px rgba(59,130,246,.5);">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-  </div>
-  <div style="color:#e8eaed;font-size:17px;font-weight:800;letter-spacing:-.2px;">PrintManager Pro</div>
-  <div style="display:flex;gap:6px;align-items:center;" id="loading-dots">
-    <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:ld .8s ease-in-out infinite;"></div>
-    <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:ld .8s ease-in-out .15s infinite;"></div>
-    <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:ld .8s ease-in-out .3s infinite;"></div>
-  </div>
-  <div id="loading-msg" style="color:#6e747d;font-size:12px;max-width:400px;">Memuat aplikasi...</div>
-  <div id="loading-debug" style="color:#46494f;font-size:10px;font-family:monospace;max-width:450px;line-height:1.6;"></div>
-  <style>@keyframes ld{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}</style>
-</div>
-
-<!-- TOAST CONTAINER -->
-<div class="toast-wrap" id="toast-wrap"></div>
-
-<!-- ========== SETUP ========== -->
-<div id="setup-wrap" class="setup-wrap" style="display:none;">
-  <div class="setup-box">
-    <div class="setup-brand">
-      <div class="setup-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div><h1>PrintManager Pro</h1><p>v2 — Konfigurasi Supabase</p></div>
-    </div>
-    <div id="setup-step-dots" class="step-indicator">
-      <div class="step-dot active" id="sdot-1"></div>
-      <div class="step-dot" id="sdot-2"></div>
-    </div>
-    <div id="setup-step1">
-      <div class="setup-h">Hubungkan ke Supabase</div>
-      <div class="setup-sub">Masukkan URL dan Anon Key dari project Supabase Anda.</div>
-      <div class="setup-note">
-        💡 Buka <code>supabase.com</code> → Project → <code>Settings → API</code><br>
-        Salin <strong>Project URL</strong> dan <strong>anon/public key</strong>.
-      </div>
-      <div class="lf"><label>Supabase Project URL</label>
-        <input type="text" id="sb-url" placeholder="https://xxxxxx.supabase.co">
-      </div>
-      <div class="lf"><label>Supabase Anon Key</label>
-        <input type="password" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6...">
-      </div>
-      <div id="setup-err" class="lerr"></div>
-      <button class="lbtn" id="setup-btn1" onclick="setupStep1()">Lanjut → Verifikasi</button>
-    </div>
-    <div id="setup-step2" style="display:none;">
-      <div class="setup-h">Setup Database</div>
-      <div class="setup-sub">Buka <strong>SQL Editor</strong> di Supabase, jalankan SQL di bawah ini, lalu klik Verifikasi.</div>
-      <div style="background:var(--surf2);border:1px solid var(--brd);border-radius:var(--rsm);padding:14px;margin-bottom:14px;position:relative;">
-        <pre id="sql-code" style="font-family:var(--mono);font-size:10.5px;color:var(--cyan);white-space:pre-wrap;line-height:1.5;max-height:260px;overflow-y:auto;"></pre>
-        <button class="btn btn-sm btn-p" style="position:absolute;top:8px;right:8px;" onclick="copySql()">📋 Salin</button>
-      </div>
-      <div id="setup-err2" class="lerr"></div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-p" onclick="goSetupStep1()">← Kembali</button>
-        <button class="lbtn" style="flex:1;" id="setup-btn2" onclick="setupVerify()">✅ Verifikasi & Lanjut</button>
-      </div>
-    </div>
-    <div id="setup-step3" style="display:none;">
-      <div class="setup-h">Buat Akun Pengguna</div>
-      <div class="setup-sub">Daftarkan akun pengguna ke Supabase Auth. Lakukan sekali saja saat pertama kali setup.</div>
-      <div class="alert-i">📌 Setelah akun dibuat, Anda bisa login dengan email & password yang ditentukan di bawah. Akun hanya perlu dibuat sekali.</div>
-      <div id="create-users-list" style="margin-bottom:14px;"></div>
-      <div id="setup-err3" class="lerr"></div>
-      <button class="lbtn" id="setup-btn3" onclick="createAllUsers()">🚀 Buat Semua Akun & Mulai</button>
-      <div style="margin-top:10px;text-align:center;">
-        <button onclick="skipUserCreation()" style="background:none;border:none;color:var(--ink3);font-size:12px;cursor:pointer;font-family:var(--sans);">Akun sudah ada → Langsung ke Login</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ========== LOGIN ========== -->
-<div class="login-wrap" id="login-wrap" style="display:none;">
-  <div class="login-box">
-    <div class="login-brand">
-      <div class="login-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-      </div>
-      <div><h1>PrintManager Pro</h1><p>Sistem Manajemen Percetakan</p></div>
-    </div>
-    <div class="login-h">Masuk ke Sistem</div>
-    <div class="login-sub">Pilih akun lalu masukkan password</div>
-    <div class="user-grid">
-      <div class="ucard" id="uc-admin" onclick="pickUser('admin')">
-        <div class="uav av-a">AD</div><div class="ucname">Admin</div><div class="ucrole">admin</div>
-      </div>
-      <div class="ucard owner" id="uc-agus" onclick="pickUser('agus')">
-        <div class="uav av-o">AG</div><div class="ucname">Agus</div><div class="ucrole">owner</div>
-      </div>
-      <div class="ucard owner" id="uc-arko" onclick="pickUser('arko')">
-        <div class="uav av-o">AR</div><div class="ucname">Arko</div><div class="ucrole">owner</div>
-      </div>
-    </div>
-    <div class="lerr" id="lerr"></div>
-    <div class="lf"><label>Password</label>
-      <input type="password" id="lpass" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()">
-    </div>
-    <button class="lbtn" id="login-btn" onclick="doLogin()">Masuk →</button>
-    <div style="margin-top:10px;text-align:center;">
-      <button onclick="showSetup()" style="background:none;border:none;color:var(--ink3);font-size:11px;cursor:pointer;font-family:var(--sans);">⚙️ Ubah konfigurasi Supabase</button>
-    </div>
-  </div>
-</div>
-
-<!-- ========== APP ========== -->
-<div class="app" id="app">
-  <div class="topbar no-print">
-    <div class="topbar-inner">
-      <div class="tb-brand">
-        <div class="tb-logo">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-        </div>
-        <h1>PrintManager Pro</h1>
-      </div>
-      <div class="tb-right">
-        <div class="sync-badge sync-idle" id="sync-badge">☁️ Supabase</div>
-        <button class="icon-btn" id="refresh-btn" onclick="manualRefresh()" title="Refresh data">🔄</button>
-        <button class="icon-btn notif-btn" id="notif-btn" onclick="toggleNotif()" title="Notifikasi browser">🔔<span class="notif-badge" id="notif-badge">0</span></button>
-        <div class="upill">
-          <div class="upip" id="tb-pip"></div>
-          <div><div class="upill-name" id="tb-name"></div><div class="upill-role" id="tb-role"></div></div>
-        </div>
-        <button class="lout-btn" onclick="doLogout()">Keluar</button>
-      </div>
-    </div>
-  </div>
-  <div class="nav-wrap no-print">
-    <div class="nav">
-      <button class="nbtn act" onclick="goPage('dashboard')">Dashboard</button>
-      <button class="nbtn" onclick="goPage('kuitansi')">Buat Kuitansi</button>
-      <button class="nbtn owner-only" onclick="goPage('modal')">Catat Modal</button>
-      <button class="nbtn owner-only" onclick="goPage('pl')">Untung &amp; Rugi</button>
-      <button class="nbtn" onclick="goPage('riwayat')">Riwayat</button>
-      <button class="nbtn owner-only" onclick="goPage('log')">Log Aktivitas</button>
-      <button class="nbtn owner-only" onclick="goPage('template')">Template Item</button>
-      <button class="nbtn owner-only" onclick="goPage('backup')">Backup</button>
-    </div>
-  </div>
-  <div class="main">
-    <div class="inner">
-
-      <!-- DASHBOARD -->
-      <div id="page-dashboard" class="page on">
-        <div class="stats">
-          <div class="stat-card"><div class="slbl">Pemasukan (Asli)</div><div class="sval sv-g" id="s-masuk">Rp 0</div></div>
-          <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="s-keluar">Rp 0</div></div>
-          <div class="stat-card"><div class="slbl">Saldo Bersih</div><div class="sval sv-b" id="s-saldo">Rp 0</div></div>
-          <div class="stat-card"><div class="slbl">Order Bulan Ini</div><div class="sval sv-o" id="s-order">0</div></div>
-        </div>
-        <div class="card"><div class="chdr">Transaksi Terbaru</div><div id="db-recent"><div class="empty">Memuat...</div></div></div>
-      </div>
-
-      <!-- KUITANSI -->
-      <div id="page-kuitansi" class="page">
-        <div class="card no-print">
-          <div class="chdr">Tipe Kuitansi</div>
-          <div class="fg"><label>Jenis</label>
-            <select id="q-tipe" onchange="onTipeChange()">
-              <option value="asli">Kuitansi Asli — Transaksi Nyata</option>
-              <option value="fiktif">Kuitansi Fiktif — Keperluan Administrasi</option>
-            </select>
-          </div>
-          <div id="fiktif-note" class="alert-i" style="display:none;">Kuitansi ini akan ditandai <strong>FIKTIF</strong> di sistem.</div>
-        </div>
-        <div class="card no-print">
-          <div class="chdr">Identitas Percetakan</div>
-          <div class="g2">
-            <div class="fg"><label>Nama Percetakan</label><input type="text" id="q-namapt" value="PRINTPRO DIGITAL"></div>
-            <div class="fg"><label>Kontak</label><input type="text" id="q-kontakpt" value="0813-1250-6025"></div>
-          </div>
-          <div class="fg"><label>Alamat</label><input type="text" id="q-alamatpt" value="Jl. Jend. Pol. Hoegeng Imam Santoso, Cimenyan II, Banjar"></div>
-        </div>
-        <div class="card no-print">
-          <div class="chdr">Detail Kuitansi &amp; Pelanggan</div>
-          <div class="g3">
-            <div class="fg"><label>Nomor Kuitansi</label><input type="text" id="q-no"></div>
-            <div class="fg"><label>Tanggal</label><input type="date" id="q-tgl"></div>
-            <div class="fg"><label>Status</label>
-              <select id="q-status"><option>LUNAS</option><option>BELUM LUNAS</option><option>DP</option></select>
-            </div>
-          </div>
-          <div class="g2">
-            <div class="fg"><label>Nama Pelanggan</label><input type="text" id="q-pelanggan" placeholder="Nama customer / instansi"></div>
-            <div class="fg"><label>Alamat Pelanggan</label><input type="text" id="q-alamatpl" placeholder="Kota / Alamat"></div>
-          </div>
-        </div>
-        <div class="card no-print">
-          <div class="chdr">Rincian Item
-            <span style="font-size:11px;color:var(--ink3);font-weight:400;">Ketik nama item untuk autocomplete dari template</span>
-          </div>
-          <table class="itable">
-            <thead><tr>
-              <th class="td-no">No</th><th>Deskripsi</th>
-              <th class="td-qty">Qty</th><th class="td-hp">Harga Satuan</th>
-              <th class="td-sub">Subtotal</th><th class="td-del"></th>
-            </tr></thead>
-            <tbody id="items-body"></tbody>
-          </table>
-          <button class="add-row" onclick="addRow()">+ Tambah Item</button>
-          <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-            <div class="fg" style="width:220px;margin:0;"><label>Diskon (Rp)</label>
-              <input type="number" id="q-diskon" value="0" oninput="recalc()" style="text-align:right;">
-            </div>
-          </div>
-          <div class="total-box">
-            <span class="total-lbl">Total Bayar</span>
-            <span class="total-val" id="q-total">Rp 0</span>
-          </div>
-        </div>
-        <div class="card no-print">
-          <div class="chdr">Catatan</div>
-          <div class="fg"><textarea id="q-catatan">Barang yang sudah diambil tidak dapat dikembalikan lagi.</textarea></div>
-        </div>
-        <div class="acts no-print">
-          <button class="btn btn-o" onclick="resetKuitansi()">Reset</button>
-          <button class="btn btn-p" onclick="previewKuitansi()">👁 Preview</button>
-          <button class="btn btn-b" id="btn-simpan-kwt" onclick="simpanKuitansi()">💾 Simpan</button>
-        </div>
-        <div id="rc-container" style="display:none;"></div>
-        <div id="print-acts" class="acts no-print" style="display:none;">
-          <button class="btn btn-o" onclick="window.print()">🖨️ Cetak / Print</button>
-          <button class="btn btn-pdf" onclick="exportPDF()">📄 Export PDF</button>
-        </div>
-      </div>
-
-      <!-- MODAL -->
-      <div id="page-modal" class="page">
-        <div class="card">
-          <div class="chdr">Catat Pengeluaran Modal</div>
-          <div class="g2">
-            <div class="fg"><label>Jenis Modal</label>
-              <select id="m-jenis">
-                <option value="fisik">Modal Fisik (Mesin, Alat, Bahan Baku)</option>
-                <option value="operasional">Modal Operasional (Listrik, Sewa, Gaji)</option>
-              </select>
-            </div>
-            <div class="fg"><label>Tanggal</label><input type="date" id="m-tgl"></div>
-          </div>
-          <div class="g2">
-            <div class="fg"><label>Nama Pengeluaran</label><input type="text" id="m-nama" placeholder="Tinta, Listrik, Bahan baku..."></div>
-            <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="m-jml" placeholder="0"></div>
-          </div>
-          <div class="fg"><label>Keterangan</label><textarea id="m-ket" style="min-height:46px;" placeholder="Catatan tambahan..."></textarea></div>
-          <div class="acts"><button class="btn btn-b" id="btn-simpan-modal" onclick="simpanModal()">+ Catat Pengeluaran</button></div>
-        </div>
-        <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
-          <div class="stat-card"><div class="slbl">Modal Fisik</div><div class="sval sv-b" id="ms-fisik">Rp 0</div></div>
-          <div class="stat-card"><div class="slbl">Modal Operasional</div><div class="sval sv-o" id="ms-ops">Rp 0</div></div>
-          <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="ms-total">Rp 0</div></div>
-        </div>
-        <div class="card"><div class="chdr">Daftar Pengeluaran Modal</div><div id="modal-list"><div class="empty">Memuat...</div></div></div>
-      </div>
-
-      <!-- UNTUNG RUGI -->
-      <div id="page-pl" class="page">
-        <div class="card">
-          <div class="chdr">Filter Periode</div>
-          <div class="period-filter">
-            <label>Tampilkan:</label>
-            <select id="pl-filter-mode" onchange="onPLFilterChange()">
-              <option value="all">Semua Waktu</option>
-              <option value="month">Bulan Tertentu</option>
-              <option value="year">Tahun Tertentu</option>
-              <option value="range">Rentang Tanggal</option>
-            </select>
-            <select id="pl-filter-month" style="display:none;" onchange="updatePL()">
-              <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
-              <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
-              <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
-              <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
-            </select>
-            <select id="pl-filter-year" style="display:none;" onchange="updatePL()"></select>
-            <input type="date" id="pl-filter-from" style="display:none;" onchange="updatePL()">
-            <span id="pl-filter-range-sep" style="display:none;color:var(--ink3);font-size:12px;">s/d</span>
-            <input type="date" id="pl-filter-to" style="display:none;" onchange="updatePL()">
-          </div>
-        </div>
-        <div class="card">
-          <div class="chdr">Grafik Tren Bulanan <span style="font-size:11px;color:var(--ink3);font-weight:400;">(12 bulan terakhir)</span></div>
-          <div id="chart-area"><div class="chart-empty">Belum ada data</div></div>
-        </div>
-        <div class="card" style="border-left:3px solid var(--blue);">
-          <div class="chdr">Laporan Untung &amp; Rugi <span id="pl-period-label" class="pl-period-badge" style="display:none;"></span></div>
-          <div class="pl-sec-hdr" style="margin-top:0;">Pemasukan</div>
-          <div class="pl-row"><span>Kuitansi Asli</span><span class="pv sv-g" id="pl-asli">Rp 0</span></div>
-          <div class="pl-row"><span>Pemasukan Lain</span><span class="pv sv-g" id="pl-lain-masuk">Rp 0</span></div>
-          <div class="pl-sub-row"><span>Subtotal Pemasukan</span><span class="pv sv-g" id="pl-sub-masuk">Rp 0</span></div>
-          <div class="pl-sec-hdr">Pengeluaran</div>
-          <div class="pl-row"><span>Modal Fisik</span><span class="pv sv-r" id="pl-fisik">Rp 0</span></div>
-          <div class="pl-row"><span>Modal Operasional</span><span class="pv sv-r" id="pl-ops">Rp 0</span></div>
-          <div class="pl-row"><span>Pengeluaran Lain</span><span class="pv sv-r" id="pl-lain-keluar">Rp 0</span></div>
-          <div class="pl-sub-row"><span>Subtotal Pengeluaran</span><span class="pv sv-r" id="pl-sub-keluar">Rp 0</span></div>
-          <div class="pl-net-row"><span>LABA / RUGI BERSIH</span><span class="pv" id="pl-net">Rp 0</span></div>
-          <div id="pl-status-box" style="text-align:center;padding:11px;border-radius:var(--rsm);font-size:13px;font-weight:700;margin-top:8px;"></div>
-        </div>
-        <div class="card">
-          <div class="chdr">Catatan Lainnya</div>
-          <div class="g2">
-            <div class="fg"><label>Jenis</label>
-              <select id="pl-type"><option value="masuk">Pemasukan Lain</option><option value="keluar">Pengeluaran Lain</option></select>
-            </div>
-            <div class="fg"><label>Jumlah (Rp)</label><input type="number" id="pl-amt" placeholder="0"></div>
-          </div>
-          <div class="fg"><label>Keterangan</label><input type="text" id="pl-desc" placeholder="Deskripsi..."></div>
-          <div class="acts"><button class="btn btn-p" id="btn-simpan-pl" onclick="simpanPL()">Catat</button></div>
-          <div id="pl-extra-list" style="margin-top:14px;"></div>
-        </div>
-      </div>
-
-      <!-- RIWAYAT -->
-      <div id="page-riwayat" class="page">
-        <div class="card">
-          <div class="chdr">Semua Kuitansi
-            <select id="filter-tipe" onchange="renderRiwayat()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
-              <option value="semua">Semua</option><option value="asli">Asli</option><option value="fiktif">Fiktif</option>
-            </select>
-          </div>
-          <div id="kwt-list"><div class="empty">Memuat...</div></div>
-        </div>
-      </div>
-
-      <!-- LOG -->
-      <div id="page-log" class="page">
-        <div class="card">
-          <div class="chdr">Log Aktivitas
-            <div style="display:flex;gap:7px;flex-wrap:wrap;">
-              <select id="log-filter-user" onchange="renderLog()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
-                <option value="semua">Semua Pengguna</option>
-                <option value="Admin">Admin</option><option value="Agus">Agus</option><option value="Arko">Arko</option>
-              </select>
-              <select id="log-filter-type" onchange="renderLog()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
-                <option value="semua">Semua Aksi</option>
-                <option value="kuitansi">Kuitansi</option><option value="modal">Modal</option>
-                <option value="pl">P&L</option><option value="login">Login/Logout</option>
-              </select>
-              <button class="btn btn-o btn-sm" onclick="eksporLogCSV()">⬇ CSV</button>
-            </div>
-          </div>
-          <div id="log-count" style="font-size:11px;color:var(--ink3);margin-bottom:10px;"></div>
-          <div id="log-list"><div class="empty">Memuat...</div></div>
-        </div>
-      </div>
-
-      <!-- TEMPLATE ITEM -->
-      <div id="page-template" class="page">
-        <div class="card">
-          <div class="chdr">Tambah Template Item Baru</div>
-          <div class="g3">
-            <div class="fg"><label>Nama Item</label><input type="text" id="tmpl-name" placeholder="Nama produk/layanan"></div>
-            <div class="fg"><label>Harga Default (Rp)</label><input type="number" id="tmpl-price" placeholder="0"></div>
-            <div class="fg"><label>Satuan</label><input type="text" id="tmpl-unit" placeholder="lembar, pcs, m²..." value="pcs"></div>
-          </div>
-          <div class="acts"><button class="btn btn-b" id="btn-simpan-tmpl" onclick="simpanTemplate()">+ Tambah Template</button></div>
-        </div>
-        <div class="card">
-          <div class="chdr">Daftar Template Item
-            <span style="font-size:11px;color:var(--ink3);font-weight:400;">Muncul sebagai autocomplete saat buat kuitansi</span>
-          </div>
-          <div id="tmpl-list"><div class="empty">Memuat...</div></div>
-        </div>
-      </div>
-
-      <!-- BACKUP -->
-      <div id="page-backup" class="page">
-        <div class="card" style="border-left:3px solid var(--cyan);">
-          <div class="chdr">Status Koneksi</div>
-          <div id="sb-conn-status"><div class="empty">Memeriksa...</div></div>
-        </div>
-        <div class="card">
-          <div class="chdr">Download Backup (JSON)</div>
-          <div class="backup-grid">
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-c">📦</div>
-                <div><div class="backup-item-title">Semua Data</div><div class="backup-item-desc">Kuitansi, modal, P&L, log</div></div></div>
-              <button class="btn btn-b btn-sm" onclick="doBackup('all')">⬇ Download</button>
-            </div>
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-g">🧾</div>
-                <div><div class="backup-item-title">Kuitansi</div><div class="backup-item-desc">Semua data kuitansi</div></div></div>
-              <button class="btn btn-g btn-sm" onclick="doBackup('kuitansi')">⬇ Download</button>
-            </div>
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-b">💰</div>
-                <div><div class="backup-item-title">Modal &amp; P&L</div><div class="backup-item-desc">Pengeluaran dan catatan</div></div></div>
-              <button class="btn btn-o btn-sm" onclick="doBackup('modal')">⬇ Download</button>
-            </div>
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-v">📋</div>
-                <div><div class="backup-item-title">Log Aktivitas</div><div class="backup-item-desc">JSON atau CSV</div></div></div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn btn-o btn-sm" onclick="doBackup('logs')">⬇ JSON</button>
-                <button class="btn btn-o btn-sm" onclick="eksporLogCSV()">⬇ CSV</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="chdr">Restore Data</div>
-          <div class="alert-w">⚠ Restore akan <strong>menambahkan</strong> data (upsert). Data lama dengan ID sama tidak akan diganti.</div>
-          <div class="backup-grid">
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-c">📦</div>
-                <div><div class="backup-item-title">Restore Semua</div><div class="backup-item-desc">Dari backup lengkap</div></div></div>
-              <div><button class="btn btn-orange btn-sm" onclick="document.getElementById('ri-all').click()">⬆ Pilih File</button>
-                <input type="file" id="ri-all" class="restore-input" accept=".json" onchange="doRestore(this,'all')"></div>
-            </div>
-            <div class="backup-item">
-              <div class="backup-item-hdr"><div class="ico ico-g">🧾</div>
-                <div><div class="backup-item-title">Restore Kuitansi</div><div class="backup-item-desc">Dari backup kuitansi</div></div></div>
-              <div><button class="btn btn-orange btn-sm" onclick="document.getElementById('ri-kuitansi').click()">⬆ Pilih File</button>
-                <input type="file" id="ri-kuitansi" class="restore-input" accept=".json" onchange="doRestore(this,'kuitansi')"></div>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="chdr">Informasi Data Tersimpan</div>
-          <div id="db-info" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;"></div>
-        </div>
-      </div>
-
-    </div><!-- /inner -->
-  </div><!-- /main -->
-</div><!-- /app -->
-<script>
 // ================================================================
 //  LOADING SCREEN HELPERS (global scope)
 // ================================================================
@@ -946,140 +94,6 @@ const _cdnReady = (async () => {
 // Diletakkan di luar IIFE supaya bisa diakses dari onclick="..." di HTML
 // ════════════════════════════════════════════════════════════════
 
-const USERS = {
-  admin: {
-    name: 'Admin',
-    role: 'admin',
-    initials: 'AD',
-    pipClass: 'pip-a',
-    email: 'admin@printmanager.local',
-    pass: 'admin123'
-  },
-  agus: {
-    name: 'Agus',
-    role: 'owner',
-    initials: 'AG',
-    pipClass: 'pip-o',
-    email: 'agus@printmanager.local',
-    pass: 'vtnyzp40975'
-  },
-  arko: {
-    name: 'Arko',
-    role: 'owner',
-    initials: 'AR',
-    pipClass: 'pip-o',
-    email: 'arko@printmanager.local',
-    pass: 'htw876'
-  }
-};
-
-// SQL yang ditampilkan di setup wizard (langkah 2)
-const SQL_SCHEMA = `-- PrintManager Pro v2 — Jalankan di Supabase SQL Editor → Run
-
--- 1. BUAT TABEL
-create table if not exists pm_kuitansi (
-  id          bigint       primary key,
-  timestamp   timestamptz  default now(),
-  created_by  text,
-  user_id     uuid         references auth.users(id) on delete set null,
-  tipe        text,
-  namapt      text, kontakpt text, alamatpt text,
-  no          text, tgl date, status text,
-  pelanggan   text, alamatpl text, catatan text,
-  items       jsonb        default '[]',
-  diskon      numeric      default 0,
-  total       numeric      default 0
-);
-create table if not exists pm_modal (
-  id          bigint       primary key,
-  timestamp   timestamptz  default now(),
-  created_by  text,
-  user_id     uuid         references auth.users(id) on delete set null,
-  jenis       text, nama text, jumlah numeric default 0, ket text, tgl date
-);
-create table if not exists pm_pl_manual (
-  id          bigint       primary key,
-  type        text,
-  amount      numeric      default 0,
-  keterangan  text,
-  tgl         date,
-  created_by  text,
-  user_id     uuid         references auth.users(id) on delete set null
-);
-create table if not exists pm_logs (
-  id          text         primary key,
-  ts          timestamptz  default now(),
-  username    text, role text, user_id uuid,
-  category    text, action text, detail text
-);
-create table if not exists pm_item_templates (
-  id            bigserial    primary key,
-  name          text         not null,
-  default_price numeric      default 0,
-  unit          text         default 'pcs',
-  created_by    text,
-  created_at    timestamptz  default now()
-);
-
--- 2. ROW LEVEL SECURITY
-alter table pm_kuitansi      enable row level security;
-alter table pm_modal         enable row level security;
-alter table pm_pl_manual     enable row level security;
-alter table pm_logs          enable row level security;
-alter table pm_item_templates enable row level security;
-
--- Helper: baca role dari JWT user_metadata
-create or replace function get_user_role()
-returns text language sql stable security definer as $$
-  select coalesce((auth.jwt()->'user_metadata'->>'role'), 'admin');
-$$;
-
--- Drop policy lama (agar bisa dijalankan ulang)
-drop policy if exists "kw_sel" on pm_kuitansi;
-drop policy if exists "kw_ins" on pm_kuitansi;
-drop policy if exists "kw_del" on pm_kuitansi;
-drop policy if exists "mo_all" on pm_modal;
-drop policy if exists "pl_all" on pm_pl_manual;
-drop policy if exists "lo_all" on pm_logs;
-drop policy if exists "tm_sel" on pm_item_templates;
-drop policy if exists "tm_own" on pm_item_templates;
-
--- Kuitansi: semua bisa SELECT & INSERT, hanya owner bisa DELETE
-create policy "kw_sel" on pm_kuitansi for select to authenticated using (true);
-create policy "kw_ins" on pm_kuitansi for insert to authenticated with check (auth.uid() = user_id OR user_id IS NULL);
-create policy "kw_del" on pm_kuitansi for delete to authenticated using (get_user_role() = 'owner');
-
--- Modal & P&L: hanya owner
-create policy "mo_all" on pm_modal     for all to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');
-create policy "pl_all" on pm_pl_manual for all to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');
-
--- Log: semua bisa read/write
-create policy "lo_all" on pm_logs for all to authenticated using (true) with check (true);
-
--- Template: semua bisa baca, hanya owner bisa ubah
-create policy "tm_sel" on pm_item_templates for select to authenticated using (true);
-create policy "tm_own" on pm_item_templates for all to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');
-
--- 3. AKTIFKAN REALTIME
-alter publication supabase_realtime add table pm_kuitansi;
-alter publication supabase_realtime add table pm_modal;
-alter publication supabase_realtime add table pm_pl_manual;
-alter publication supabase_realtime add table pm_item_templates;
-
--- 4. TEMPLATE ITEM CONTOH
-insert into pm_item_templates (name, default_price, unit, created_by) values
-  ('Print A4 BW',      500,   'lembar', 'System'),
-  ('Print A4 Color',   2000,  'lembar', 'System'),
-  ('Print A3 BW',      1000,  'lembar', 'System'),
-  ('Print A3 Color',   4000,  'lembar', 'System'),
-  ('Fotocopy A4',      300,   'lembar', 'System'),
-  ('Laminasi A4',      5000,  'lembar', 'System'),
-  ('Spiral Binding',   10000, 'buku',   'System'),
-  ('Cetak Banner',     35000, 'm²',     'System'),
-  ('Cetak Stiker',     3000,  'lembar', 'System'),
-  ('Jilid Softcover',  15000, 'buku',   'System')
-on conflict do nothing;`;
-
 // ----------------------------------------------------------------
 //  STATE GLOBAL
 // ----------------------------------------------------------------
@@ -1155,8 +169,8 @@ function showToast(title, msg, ico = 'ℹ️', duration = 4500) {
   t.innerHTML = `
     <span class="toast-ico">${ico}</span>
     <div class="toast-body">
-      <div class="toast-title">${title}</div>
-      ${msg ? `<div class="toast-msg">${msg}</div>` : ''}
+      <div class="toast-title">${esc(title)}</div>
+      ${msg ? `<div class="toast-msg">${esc(msg)}</div>` : ''}
     </div>
     <button class="toast-close" onclick="this.parentElement.remove()">×</button>`;
   wrap.appendChild(t);
@@ -1322,8 +336,9 @@ function mapLog(r) {
 //  Parameter upsert=true dipakai saat restore backup.
 // ================================================================
 
-async function dbInsertKwt(k, upsert = false) {
-  const row = {
+// Pembentuk baris DB dari objek app (dipakai insert biasa & restore massal)
+function kwtRow(k) {
+  return {
     id: k.id, timestamp: k.timestamp, created_by: k.createdBy,
     ...(k.userId ? { user_id: k.userId } : {}),
     tipe: k.tipe, namapt: k.namapt, kontakpt: k.kontakpt, alamatpt: k.alamatpt,
@@ -1331,6 +346,24 @@ async function dbInsertKwt(k, upsert = false) {
     alamatpl: k.alamatpl, catatan: k.catatan, items: k.items,
     diskon: k.diskon, total: k.total
   };
+}
+function modalRow(m) {
+  return {
+    id: m.id, timestamp: m.timestamp, created_by: m.createdBy,
+    ...(m.userId ? { user_id: m.userId } : {}),
+    jenis: m.jenis, nama: m.nama, jumlah: m.jumlah, ket: m.ket, tgl: m.tgl
+  };
+}
+function plRow(p) {
+  return {
+    id: p.id, type: p.type, amount: p.amount,
+    keterangan: p.desc, tgl: p.tgl, created_by: p.createdBy,
+    ...(p.userId ? { user_id: p.userId } : {})
+  };
+}
+
+async function dbInsertKwt(k, upsert = false) {
+  const row = kwtRow(k);
   const op = upsert
     ? sbClient.from('pm_kuitansi').upsert(row, { onConflict: 'id', ignoreDuplicates: true })
     : sbClient.from('pm_kuitansi').insert(row);
@@ -1347,11 +380,7 @@ async function dbDeleteKwt(id) {
 }
 
 async function dbInsertModal(m, upsert = false) {
-  const row = {
-    id: m.id, timestamp: m.timestamp, created_by: m.createdBy,
-    ...(m.userId ? { user_id: m.userId } : {}),
-    jenis: m.jenis, nama: m.nama, jumlah: m.jumlah, ket: m.ket, tgl: m.tgl
-  };
+  const row = modalRow(m);
   const op = upsert
     ? sbClient.from('pm_modal').upsert(row, { onConflict: 'id', ignoreDuplicates: true })
     : sbClient.from('pm_modal').insert(row);
@@ -1367,11 +396,7 @@ async function dbDeleteModal(id) {
 }
 
 async function dbInsertPL(p, upsert = false) {
-  const row = {
-    id: p.id, type: p.type, amount: p.amount,
-    keterangan: p.desc, tgl: p.tgl, created_by: p.createdBy,
-    ...(p.userId ? { user_id: p.userId } : {})
-  };
+  const row = plRow(p);
   const op = upsert
     ? sbClient.from('pm_pl_manual').upsert(row, { onConflict: 'id', ignoreDuplicates: true })
     : sbClient.from('pm_pl_manual').insert(row);
@@ -1546,7 +571,21 @@ function fmt(n) {
   return 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
 }
 
+// Tanggal HARI INI menurut jam perangkat (YYYY-MM-DD).
+// Jangan pakai toISOString(): itu UTC, sehingga sebelum 07.00 WIB tanggalnya mundur sehari.
+function todayISO() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 // Format tanggal YYYY-MM-DD → DD-MM-YYYY
+// Kota untuk baris tanda tangan: bagian TERAKHIR alamat ("..., Cimenyan II, Banjar" → "Banjar")
+function kotaDariAlamat(alamat) {
+  const parts = String(alamat || '').split(',').map(x => x.trim()).filter(Boolean);
+  if (parts.length >= 2) return parts[parts.length - 1];
+  return parts.length === 1 && parts[0].length <= 25 ? parts[0] : '';
+}
+
 function fmtTgl(s) {
   if (!s) return '-';
   const d = new Date(s + 'T00:00:00');
@@ -1592,7 +631,15 @@ function dlText(text, fname) {
 
 // Escape HTML untuk mencegah XSS
 function esc(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Detail log boleh memuat <strong> (dibuat aplikasi); semua tag lain di-escape.
+// Dipakai saat TAMPIL, sehingga data log lama yang belum bersih pun aman.
+function safeLogHtml(s) {
+  return esc(s).replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>');
 }
 
 // ================================================================
@@ -1752,60 +799,11 @@ function renderCreateUsersList() {
   el.innerHTML = Object.entries(USERS).map(([k, u]) => `
     <div style="display:flex;align-items:center;justify-content:space-between;
       padding:10px 0;border-bottom:1px solid var(--brd);">
-      <div>
-        <div style="font-size:13px;font-weight:600;color:var(--ink);">
-          ${u.name} <span style="font-size:10px;color:var(--ink3);">(${u.role})</span>
-        </div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px;font-family:var(--mono);">
-          ${u.email}
-        </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">
+        ${esc(u.name)} <span style="font-size:10px;color:var(--ink3);">(${esc(u.role)})</span>
       </div>
-      <div style="font-size:11px;color:var(--ink3);">
-        pass: <code style="background:var(--surf3);padding:2px 6px;border-radius:4px;color:var(--cyan);">
-          ${u.pass}
-        </code>
-      </div>
+      <code style="font-size:11px;background:var(--surf3);padding:2px 6px;border-radius:4px;color:var(--cyan);">${esc(u.email)}</code>
     </div>`).join('');
-}
-
-async function createAllUsers() {
-  const errEl = document.getElementById('setup-err3');
-  const btn   = document.getElementById('setup-btn3');
-  errEl.style.display = 'none';
-  btn.disabled = true; btn.textContent = '⏳ Membuat akun...';
-
-  let created = 0, skipped = 0;
-  for (const [k, u] of Object.entries(USERS)) {
-    try {
-      const { error } = await sbClient.auth.signUp({
-        email: u.email,
-        password: u.pass,
-        options: {
-          data: {                  // user_metadata — dibaca oleh get_user_role() di RLS
-            name: u.name,
-            role: u.role,
-            initials: u.initials,
-            pipClass: u.pipClass
-          }
-        }
-      });
-      if (error && error.message.includes('already registered')) {
-        skipped++;
-      } else if (error) {
-        throw error;
-      } else {
-        created++;
-      }
-    } catch (e) {
-      console.warn('signUp', u.name, e.message);
-      skipped++;
-    }
-  }
-
-  showToast('Akun Siap', `${created} akun dibuat, ${skipped} sudah ada.`, '✅');
-  document.getElementById('setup-wrap').style.display = 'none';
-  document.getElementById('login-wrap').style.display = 'flex';
-  btn.disabled = false; btn.textContent = '🚀 Buat Semua Akun & Mulai';
 }
 
 function skipUserCreation() {
@@ -1815,8 +813,7 @@ function skipUserCreation() {
 
 // ================================================================
 //  LOGIN / LOGOUT — Supabase Auth
-//  Primary: signInWithPassword via Supabase Auth
-//  Fallback: cocokkan pass lokal (untuk kasus Auth belum di-setup)
+//  Hanya via Supabase Auth (tidak ada fallback password lokal)
 // ================================================================
 
 function pickUser(k) {
@@ -1833,23 +830,44 @@ function pickUser(k) {
   document.getElementById('lerr').style.display = 'none';
 }
 
+// Bentuk objek pengguna aktif. Peran SELALU dari app_metadata di token login
+// (pengguna tidak bisa mengubahnya). Tanpa peran valid → null (tidak boleh masuk).
+function buildCU(key, authUser) {
+  const ud   = USERS[key];
+  const role = authUser && authUser.app_metadata && authUser.app_metadata.role;
+  if (!ud || (role !== 'owner' && role !== 'admin')) return null;
+  return { ...ud, key, uid: authUser.id, role };
+}
+
 function applyUserUI(u) {
   hideLoading();
   document.getElementById('login-wrap').style.display = 'none';
   document.getElementById('app').classList.add('on');
 
+  // Sidebar user info
   const pip = document.getElementById('tb-pip');
-  pip.textContent = u.initials;
-  pip.className   = 'upip ' + u.pipClass;
-  document.getElementById('tb-name').textContent = u.name;
-  document.getElementById('tb-role').textContent = u.role === 'owner' ? 'Owner' : 'Administrator';
+  if (pip) { pip.textContent = u.initials; pip.className = 'sb-user-pip ' + u.pipClass; }
+  const nameEl = document.getElementById('tb-name');
+  const roleEl = document.getElementById('tb-role');
+  if (nameEl) nameEl.textContent = u.name;
+  if (roleEl) roleEl.textContent = u.role === 'owner' ? 'Owner' : 'Administrator';
 
   // Tampilkan menu khusus owner
   if (u.role === 'owner') {
-    document.querySelectorAll('.owner-only').forEach(e => e.style.display = 'flex');
+    document.querySelectorAll('.owner-only').forEach(e => {
+      // button → flex, div (section label) → block
+      e.style.display = e.tagName === 'BUTTON' ? 'flex' : 'block';
+    });
   }
 
-  autoNo(); // Isi nomor kuitansi otomatis
+  // Terapkan preferensi sidebar & tema
+  applysidebar();
+  applyTheme();
+
+  // Mulai tracking aktivitas untuk auto-logout 2 jam
+  startActivityTracking();
+
+  autoNo();
 }
 
 async function doLogin() {
@@ -1871,42 +889,30 @@ async function doLogin() {
   btn.disabled = true; btn.textContent = '⏳ Masuk...';
 
   try {
-    // Coba login via Supabase Auth
     const { data, error } = await sbClient.auth.signInWithPassword({
       email: ud.email,
       password: pass
     });
     if (error) throw error;
 
-    // Login berhasil via Supabase Auth — uid tersedia
-    CU = { key: selKey, uid: data.user.id, ...ud };
-    applyUserUI(CU);
-    await dbLoad();
-    renderDashboard();
-    startRealtime();
-    requestNotifPermission();
-    addLog('login', 'login', `masuk sebagai ${ud.name} (${ud.role}) via Supabase Auth`);
-
-  } catch (e) {
-    // Fallback: cocokkan password lokal
-    // Berguna jika akun Auth belum dibuat (belum jalankan createAllUsers)
-    if (pass === ud.pass) {
-      CU = { key: selKey, uid: null, ...ud };
+    // Peran diambil dari token (app_metadata), bukan dari kode di browser
+    const user = buildCU(selKey, data.user);
+    if (!user) {
+      try { await sbClient.auth.signOut(); } catch (_) {}
+      errEl.textContent = 'Akun ini belum diberi peran (admin/owner). Jalankan sql/001_amankan_role.sql di Supabase, lalu coba lagi.';
+      errEl.style.display = 'block';
+    } else {
+      CU = user;
       applyUserUI(CU);
       await dbLoad();
       renderDashboard();
       startRealtime();
       requestNotifPermission();
-      showToast(
-        'Mode Login Lokal',
-        'Akun Supabase Auth belum dibuat. Buka Setup → Buat Akun untuk mengaktifkan Auth penuh.',
-        '⚠️', 8000
-      );
-      addLog('login', 'login', `masuk (local fallback) sebagai ${ud.name}`);
-    } else {
-      errEl.textContent = 'Password salah atau akun belum terdaftar di Supabase Auth.';
-      errEl.style.display = 'block';
+      addLog('login', 'login', `masuk sebagai ${CU.name} (${CU.role})`);
     }
+  } catch (e) {
+    errEl.textContent = 'Login gagal: email/password salah atau akun belum dibuat di Supabase.';
+    errEl.style.display = 'block';
   }
 
   btn.disabled = false; btn.textContent = 'Masuk →';
@@ -1918,6 +924,9 @@ async function doLogout() {
   try { await sbClient.auth.signOut(); } catch (e) {}
 
   CU = null; selKey = null;
+  clearSession();
+  stopActivityTracking();
+
   document.getElementById('app').classList.remove('on');
   document.getElementById('login-wrap').style.display = 'flex';
   document.getElementById('lpass').value = '';
@@ -1926,10 +935,10 @@ async function doLogout() {
   document.querySelectorAll('.owner-only').forEach(e => e.style.display = 'none');
   document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
   document.getElementById('page-dashboard').classList.add('on');
-  document.querySelectorAll('.nbtn').forEach((b, i) => {
-    b.classList.remove('act');
-    if (i === 0) b.classList.add('act');
-  });
+  // Reset active sidebar btn
+  document.querySelectorAll('.sb-nav-btn').forEach(b => b.classList.remove('act'));
+  const dashBtn = document.getElementById('nav-dashboard');
+  if (dashBtn) dashBtn.classList.add('act');
 
   // Reset notif badge
   _notifCount = 0;
@@ -1941,15 +950,83 @@ async function doLogout() {
 //  NAVIGASI HALAMAN
 // ================================================================
 
-const PAGES = ['dashboard', 'kuitansi', 'modal', 'pl', 'riwayat', 'log', 'template', 'backup'];
+// goPage sudah di-override
+
+
+
+// ================================================================
+//  1. SIDEBAR TOGGLE
+// ================================================================
+let _sidebarCollapsed = localStorage.getItem('pm_sidebar_col') === '1';
+
+function toggleSidebar() {
+  _sidebarCollapsed = !_sidebarCollapsed;
+  localStorage.setItem('pm_sidebar_col', _sidebarCollapsed ? '1' : '0');
+  applysidebar();
+}
+
+function applysidebar() {
+  const sb = document.getElementById('sidebar');
+  if (!sb) return;
+  if (_sidebarCollapsed) sb.classList.add('collapsed');
+  else sb.classList.remove('collapsed');
+}
+
+// ================================================================
+//  2. TEMA TERANG / GELAP
+// ================================================================
+let _theme = localStorage.getItem('pm_theme') || 'dark';
+
+function applyTheme() {
+  if (_theme === 'light') {
+    document.documentElement.classList.add('light');
+  } else {
+    document.documentElement.classList.remove('light');
+  }
+  const ico = document.getElementById('theme-ico');
+  if (ico) ico.textContent = _theme === 'light' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  _theme = _theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('pm_theme', _theme);
+  applyTheme();
+  showToast(_theme === 'light' ? 'Tema Terang' : 'Tema Gelap',
+    'Tampilan berhasil diubah.', _theme === 'light' ? '☀️' : '🌙', 2000);
+}
+
+// ================================================================
+//  3. NAVIGASI SIDEBAR — override goPage() untuk update judul & active
+// ================================================================
+const PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  kuitansi:  'Buat Kuitansi',
+  modal:     'Catat Modal',
+  pl:        'Untung & Rugi',
+  riwayat:   'Riwayat Kuitansi',
+  log:       'Log Aktivitas',
+  template:  'Template Item',
+  backup:    'Backup & Restore'
+};
+
+const PAGES = ['dashboard','kuitansi','modal','pl','riwayat','log','template','backup'];
 
 function goPage(id) {
+  // Sembunyikan semua halaman
   document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
-  document.querySelectorAll('.nbtn').forEach(b => b.classList.remove('act'));
-  document.getElementById('page-' + id).classList.add('on');
 
-  const idx = PAGES.indexOf(id);
-  if (idx >= 0) document.querySelectorAll('.nbtn')[idx].classList.add('act');
+  // Aktifkan halaman yang dipilih
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('on');
+
+  // Update active state di sidebar
+  document.querySelectorAll('.sb-nav-btn').forEach(b => b.classList.remove('act'));
+  const activeBtn = document.getElementById('nav-' + id);
+  if (activeBtn) activeBtn.classList.add('act');
+
+  // Update judul topbar
+  const titleEl = document.getElementById('page-title');
+  if (titleEl) titleEl.textContent = PAGE_TITLES[id] || id;
 
   // Render data sesuai halaman
   if (id === 'dashboard')  renderDashboard();
@@ -1959,8 +1036,103 @@ function goPage(id) {
   if (id === 'log')        renderLog();
   if (id === 'template')   renderTemplates();
   if (id === 'backup')     { renderBackupInfo(); renderSbConnStatus(); }
-  if (id === 'kuitansi')   { /* AC aktif per-row saat addRow() */ }
+
+  // Di mobile: tutup sidebar otomatis
+  if (window.innerWidth < 768 && !_sidebarCollapsed) {
+    _sidebarCollapsed = true;
+    applysidebar();
+  }
 }
+
+// ================================================================
+//  4. SESSION PERSIST — jangan logout saat refresh
+//     Simpan sesi ke localStorage, restore saat halaman dibuka
+// ================================================================
+function clearSession() {
+  localStorage.removeItem('pm_session_v2');
+}
+
+// ================================================================
+//  5. AUTO-LOGOUT setelah 2 jam tidak digunakan
+//     - Progress bar di bawah halaman menghitung mundur
+//     - Warning muncul 60 detik sebelum logout
+// ================================================================
+const AUTO_LOGOUT_MS  = 2 * 60 * 60 * 1000;  // 2 jam
+const WARN_BEFORE_MS  = 60 * 1000;             // peringatkan 60 detik sebelum
+let _lastActivity     = Date.now();
+let _autoLogoutTimer  = null;
+let _warnTimer        = null;
+let _barTimer         = null;
+
+function resetActivity() {
+  const now  = Date.now();
+  const warn = document.getElementById('autologout-warn');
+  const warnShown = warn && warn.style.display === 'block';
+  // Batasi: mousemove/scroll muncul puluhan kali per detik, cukup proses tiap 5 detik
+  if (!warnShown && now - _lastActivity < 5000) return;
+  _lastActivity = now;
+  scheduleAutoLogout();
+  if (warn) warn.style.display = 'none';
+}
+
+function scheduleAutoLogout() {
+  clearTimeout(_autoLogoutTimer);
+  clearTimeout(_warnTimer);
+  clearInterval(_barTimer);
+
+  // Warning 60 detik sebelum logout
+  _warnTimer = setTimeout(() => {
+    const warn = document.getElementById('autologout-warn');
+    if (warn) warn.style.display = 'block';
+
+    // Hitung mundur di warning
+    let sec = 60;
+    const cdEl = document.getElementById('autologout-countdown');
+    _barTimer = setInterval(() => {
+      sec--;
+      if (cdEl) cdEl.textContent = sec;
+      updateLogoutBar(sec / 60);
+      if (sec <= 0) clearInterval(_barTimer);
+    }, 1000);
+  }, AUTO_LOGOUT_MS - WARN_BEFORE_MS);
+
+  // Logout
+  _autoLogoutTimer = setTimeout(() => {
+    showToast('Sesi Berakhir', 'Anda otomatis logout karena tidak aktif selama 2 jam.', '⏰', 0);
+    setTimeout(() => doLogout(), 1500);
+  }, AUTO_LOGOUT_MS);
+
+  // Reset progress bar
+  updateLogoutBar(1);
+}
+
+function updateLogoutBar(fraction) {
+  const fill = document.getElementById('autologout-fill');
+  if (fill) fill.style.width = Math.max(0, fraction * 100) + '%';
+}
+
+function stopAutoLogout() {
+  clearTimeout(_autoLogoutTimer);
+  clearTimeout(_warnTimer);
+  clearInterval(_barTimer);
+  _autoLogoutTimer = null;
+}
+
+function startActivityTracking() {
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetActivity, { passive: true });
+  });
+  scheduleAutoLogout();
+}
+
+function stopActivityTracking() {
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(evt => {
+    document.removeEventListener(evt, resetActivity);
+  });
+  stopAutoLogout();
+}
+
+
 
 // ================================================================
 //  TEMPLATE ITEM — Kelola daftar produk/layanan percetakan
@@ -2067,13 +1239,18 @@ function setupRowAC(input, rowIdx) {
     }
 
     acEl.innerHTML = matches.slice(0, 8).map(t => `
-      <div class="ac-item"
-        onmousedown="applyAC(${rowIdx}, '${esc(t.name)}', ${t.default_price})">
+      <div class="ac-item" data-name="${esc(t.name)}" data-price="${Number(t.default_price) || 0}">
         <span class="ac-name">${esc(t.name)}</span>
         <span class="ac-price">${fmt(t.default_price)} / ${esc(t.unit)}</span>
       </div>`).join('');
     acEl.classList.add('open');
   });
+
+  // Pilih item (delegasi event; nilai dibaca dari data-attribute, bukan dari string inline)
+  acEl.onmousedown = (ev) => {
+    const it = ev.target.closest('.ac-item');
+    if (it) applyAC(rowIdx, it.dataset.name, Number(it.dataset.price) || 0);
+  };
 
   // Tutup dropdown saat input kehilangan fokus
   input.addEventListener('blur', () => {
@@ -2172,15 +1349,19 @@ function onTipeChange() {
 
 function autoNo() {
   const now = new Date();
-  const m   = String(now.getMonth() + 1).padStart(2, '0');
-  // Hitung kuitansi bulan ini untuk nomor urut
-  const nBulanIni = _cache.kuitansi.filter(k => {
-    if (!k.tgl) return false;
+  const mm  = String(now.getMonth() + 1).padStart(2, '0');
+  const re  = new RegExp('^KWT-' + mm + '-(\\d+)$');
+  // Nomor tertinggi bulan ini + 1 (tidak bentrok walau ada kuitansi yang dihapus)
+  let maxN = 0;
+  _cache.kuitansi.forEach(k => {
+    if (!k.tgl) return;
     const d = new Date(k.tgl + 'T00:00:00');
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  }).length;
+    if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return;
+    const m = re.exec(k.no || '');
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+  });
   const el = document.getElementById('q-no');
-  if (el) el.value = 'KWT-' + m + '-' + String(nBulanIni + 1).padStart(3, '0');
+  if (el) el.value = 'KWT-' + mm + '-' + String(maxN + 1).padStart(3, '0');
 }
 
 function resetKuitansi() {
@@ -2225,7 +1406,7 @@ function getFormData() {
 function buildReceipt(k, inSystem) {
   const isFiktif = k.tipe === 'fiktif';
   const tglStr   = fmtTgl(k.tgl);
-  const kota     = (k.namapt || '').split(',')[0].trim().split(/\s+/).slice(-1)[0];
+  const kota     = kotaDariAlamat(k.alamatpt);
 
   const rowsHTML = (k.items || []).map((r, i) => {
     const q = parseFloat(r.q) || 0;
@@ -2281,7 +1462,7 @@ function buildReceipt(k, inSystem) {
         <div class="rc-catatan-text">${esc(k.catatan || '')}</div>
       </div>
       <div class="rc-ttd">
-        <div class="rc-ttd-place">${esc(kota)}, ${tglStr}</div>
+        <div class="rc-ttd-place">${kota ? esc(kota) + ', ' : ''}${tglStr}</div>
         <div class="rc-ttd-line"></div>
         <div class="rc-ttd-lbl">Penerima</div>
       </div>
@@ -2330,7 +1511,14 @@ async function simpanKuitansi() {
     autoNo();
   } catch (e) {
     setSyncBadge('err', 'Gagal');
-    showToast('Gagal Menyimpan', e.message, '❌');
+    if (e && e.code === '23505') {
+      // Nomor bentrok (mis. dua device menyimpan bersamaan): muat ulang & beri nomor baru
+      await dbLoad();
+      autoNo();
+      showToast('Nomor Kuitansi Bentrok', 'Nomor sudah dipakai. Nomor baru sudah diisi — klik Simpan lagi.', '⚠️', 7000);
+    } else {
+      showToast('Gagal Menyimpan', e.message, '❌');
+    }
   }
 
   btn.disabled = false; btn.textContent = '💾 Simpan';
@@ -2338,7 +1526,7 @@ async function simpanKuitansi() {
 
 // ================================================================
 //  EXPORT PDF — Menggunakan jsPDF + jsPDF AutoTable
-//  Format A5 portrait, layout 2 kolom untuk info, tabel item.
+//  Format A4 portrait, layout 2 kolom untuk info, tabel item.
 //  Tidak perlu dialog print browser — langsung download file .pdf
 // ================================================================
 
@@ -2351,129 +1539,207 @@ function exportPDF() {
 
   try {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'mm', format: 'a5', orientation: 'portrait' });
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const W   = doc.internal.pageSize.getWidth();
-    let y     = 14;
+    const ML  = 20;
+    const MR  = 20;
+    const CW  = W - ML - MR;
+    let y     = 20;
 
-    // ── Header perusahaan
+    const BLACK = [0, 0, 0];
+    const GRAY  = [80, 80, 80];
+
+    // ── NAMA PERCETAKAN
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(20);
-    doc.text((k.namapt || 'PRINTPRO DIGITAL') + (k.tipe === 'fiktif' ? '  [FIKTIF]' : ''), 14, y);
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(k.namapt || 'PRINTPRO DIGITAL', ML, y);
     y += 6;
 
+    // ── Alamat & Kontak
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100);
-    doc.text((k.alamatpt || '') + '  |  ' + (k.kontakpt || ''), 14, y, { maxWidth: W - 28 });
-    y += 5;
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    const aLines = doc.splitTextToSize(k.alamatpt || '', CW * 0.65);
+    aLines.forEach(function(l) { doc.text(l, ML, y); y += 4.5; });
+    doc.text('Kontak: ' + (k.kontakpt || ''), ML, y);
+    y += 7;
 
-    doc.setDrawColor(180);
-    doc.line(14, y, W - 14, y);
-    y += 6;
+    // ── Garis pemisah
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(ML, y, W - MR, y);
+    y += 8;
 
-    // ── Judul
+    // ── JUDUL
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.setTextColor(30);
-    doc.text('KUITANSI PENJUALAN', W / 2, y, { align: 'center' });
-    y += 9;
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    var judul = 'KUITANSI PENJUALAN' + (k.tipe === 'fiktif' ? '  [FIKTIF]' : '');
+    doc.text(judul, W / 2, y, { align: 'center' });
+    y += 10;
 
-    // ── Info pelanggan & detail (2 kolom)
-    const col2 = W / 2 + 2;
+    // ── 2 KOLOM INFO
+    var C2 = W / 2 + 5;
+    var LH = 5.2;
+    doc.setFontSize(9);
+
+    // Label Pelanggan
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Pelanggan', ML, y);
+    doc.setLineWidth(0.25);
+    doc.line(ML, y + 1, ML + doc.getTextWidth('Pelanggan'), y + 1);
+    // Label Detail
+    doc.text('Detail', C2, y);
+    doc.line(C2, y + 1, C2 + doc.getTextWidth('Detail'), y + 1);
+    y += LH + 1;
+
+    // Baris 1: Nama | No Kuitansi
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8.5);
-    doc.setTextColor(40);
+    doc.text('Nama: ', ML, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(k.pelanggan || '-', ML + doc.getTextWidth('Nama: '), y);
+    doc.setFont('helvetica', 'normal');
+    doc.text('No. Kuitansi: ', C2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(k.no || '-', C2 + doc.getTextWidth('No. Kuitansi: '), y);
+    y += LH;
 
-    const infoL = [
-      ['Pelanggan', k.pelanggan || '-'],
-      ['Alamat',    k.alamatpl  || '-']
-    ];
-    const infoR = [
-      ['No. Kuitansi', k.no              || '-'],
-      ['Tanggal',      fmtTgl(k.tgl)],
-      ['Status',       k.status          || 'LUNAS']
-    ];
+    // Baris 2: Alamat label | Tanggal
+    doc.setFont('helvetica', 'normal');
+    doc.text('Alamat:', ML, y);
+    doc.text('Tanggal: ' + fmtTgl(k.tgl), C2, y);
+    y += LH;
 
-    let yL = y, yR = y;
-    infoL.forEach(([label, val]) => {
-      doc.setFont('helvetica', 'bold');   doc.text(label + ':', 14,  yL);
-      doc.setFont('helvetica', 'normal'); doc.text(val,          38,  yL);
-      yL += 5;
+    // Baris 3: isi alamat pelanggan | Status
+    var aplLines = doc.splitTextToSize(k.alamatpl || '', CW * 0.42);
+    for (var ai = 0; ai < aplLines.length; ai++) {
+      doc.text(aplLines[ai], ML, y + ai * LH);
+    }
+    doc.text('Status: ', C2, y);
+    doc.setFont('helvetica', 'bold');
+    doc.text(k.status || 'LUNAS', C2 + doc.getTextWidth('Status: '), y);
+    y += Math.max(aplLines.length, 1) * LH + 6;
+
+    // ── RINCIAN ITEM label
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Rincian Item', ML, y);
+    doc.setLineWidth(0.25);
+    doc.line(ML, y + 1, ML + doc.getTextWidth('Rincian Item'), y + 1);
+    y += 4;
+
+    // ── TABEL — hitam putih
+    var tableBody = (k.items || []).map(function(r, i) {
+      return [
+        i + 1,
+        r.d || '',
+        Number(r.q).toLocaleString('id-ID'),
+        'Rp ' + Math.round(r.h || 0).toLocaleString('id-ID'),
+        'Rp ' + Math.round((Number(r.q) || 0) * (Number(r.h) || 0)).toLocaleString('id-ID')
+      ];
     });
-    infoR.forEach(([label, val]) => {
-      doc.setFont('helvetica', 'bold');   doc.text(label + ':', col2,      yR);
-      doc.setFont('helvetica', 'normal'); doc.text(val,          col2 + 22, yR);
-      yR += 5;
-    });
-    y = Math.max(yL, yR) + 4;
-
-    // ── Tabel item (jsPDF AutoTable)
-    const tableBody = (k.items || []).map((r, i) => [
-      i + 1,
-      r.d || '',
-      Number(r.q) || 0,
-      'Rp ' + Math.round(r.h || 0).toLocaleString('id-ID'),
-      'Rp ' + Math.round((r.q || 0) * (r.h || 0)).toLocaleString('id-ID')
-    ]);
     if (k.diskon > 0) {
-      tableBody.push(['', 'Diskon', '', '', '- Rp ' + Math.round(k.diskon).toLocaleString('id-ID')]);
+      tableBody.push(['', '', '', 'Diskon', '- Rp ' + Math.round(k.diskon).toLocaleString('id-ID')]);
     }
 
     doc.autoTable({
       startY: y,
       head: [['No', 'Deskripsi', 'Qty', 'Harga Satuan', 'Subtotal']],
       body: tableBody,
-      foot: [['', '', '', 'TOTAL', 'Rp ' + Math.round(k.total).toLocaleString('id-ID')]],
-      styles:      { fontSize: 8, cellPadding: 2 },
-      headStyles:  { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
-      footStyles:  { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
-      columnStyles: {
-        0: { cellWidth: 8,  halign: 'center' },
-        2: { cellWidth: 14, halign: 'right'  },
-        3: { cellWidth: 26, halign: 'right'  },
-        4: { cellWidth: 30, halign: 'right'  }
+      foot: [['', '', '', 'Total', 'Rp ' + Math.round(k.total).toLocaleString('id-ID')]],
+      styles: {
+        fontSize: 9,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.2,
+        font: 'helvetica',
+        fillColor: [255, 255, 255]
       },
-      margin: { left: 14, right: 14 }
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.3,
+        halign: 'center'
+      },
+      footStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        fontStyle: 'bold',
+        lineColor: [0, 0, 0],
+        lineWidth: 0.3
+      },
+      alternateRowStyles: { fillColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 11, halign: 'center' },
+        2: { cellWidth: 24, halign: 'right'  },
+        3: { cellWidth: 38, halign: 'right'  },
+        4: { cellWidth: 38, halign: 'right'  }
+      },
+      margin: { left: ML, right: MR }
     });
 
     y = doc.lastAutoTable.finalY + 8;
 
-    // ── Catatan & Tanda Tangan
+    // Pindah halaman bila sisa ruang tidak cukup untuk catatan + tanda tangan + footer
+    if (y + 42 > doc.internal.pageSize.getHeight() - 22) { doc.addPage(); y = 20; }
+
+    // ── CATATAN + TTD
+    var kota = kotaDariAlamat(k.alamatpt);
+
+    var ySection = y;
+
+    // Catatan kiri
     if (k.catatan) {
-      doc.setFontSize(7.5);
-      doc.setTextColor(100);
-      doc.setFont('helvetica', 'italic');
-      doc.text('* ' + k.catatan, 14, y, { maxWidth: (W - 28) / 2 });
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Catatan', ML, y);
+      doc.setLineWidth(0.25);
+      doc.line(ML, y + 1, ML + doc.getTextWidth('Catatan'), y + 1);
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80, 80, 80);
+      var catLines = doc.splitTextToSize(k.catatan, CW * 0.48);
+      catLines.forEach(function(l) { doc.text(l, ML, y); y += 4.5; });
     }
 
-    const kota = (k.namapt || '').split(',')[0].trim().split(/\s+/).slice(-1)[0];
-    doc.setFontSize(8.5);
+    // TTD kanan
+    var ttdMid = W - MR - 30;
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40);
-    doc.text(kota + ', ' + fmtTgl(k.tgl), W - 14, y, { align: 'right' });
-    doc.text('Penerima', W - 14, y + 14, { align: 'right' });
-    doc.line(W - 52, y + 20, W - 14, y + 20);
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text((kota ? kota + ', ' : '') + fmtTgl(k.tgl), ttdMid, ySection, { align: 'center' });
+    var signY = ySection + 26;
+    doc.text('(', ttdMid - 28, signY);
+    doc.setLineWidth(0.3);
+    doc.line(ttdMid - 24, signY, ttdMid + 24, signY);
+    doc.text(')', ttdMid + 24, signY);
+    doc.text('Penerima', ttdMid, signY + 5, { align: 'center' });
 
-    // ── Footer
-    const pageH = doc.internal.pageSize.getHeight();
-    doc.setFontSize(7);
-    doc.setTextColor(160);
+    // ── FOOTER
+    var pageH = doc.internal.pageSize.getHeight();
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'italic');
-    doc.text('Terima kasih atas kepercayaan Anda.', W / 2, pageH - 8, { align: 'center' });
+    doc.setTextColor(80, 80, 80);
+    doc.text('Terima kasih atas kepercayaan Anda.', W / 2, pageH - 15, { align: 'center' });
 
-    // Simpan file
-    const fname = `kuitansi_${k.no || 'export'}_${nowStamp()}.pdf`;
+    var fname = 'kuitansi_' + (k.no || 'export') + '_' + nowStamp() + '.pdf';
     doc.save(fname);
-
     showToast('PDF Berhasil Dibuat', fname + ' telah didownload.', '📄');
-    addLog('kuitansi', 'pdf', `export PDF kuitansi ${k.no} — ${k.pelanggan}`);
+    addLog('kuitansi', 'pdf', 'export PDF kuitansi ' + k.no + ' — ' + k.pelanggan);
 
   } catch (e) {
     showToast('Gagal Export PDF', e.message, '❌');
     console.error('exportPDF error:', e);
   }
 }
+
 
 // Export PDF langsung dari halaman Riwayat
 function exportPDFById(id) {
@@ -2553,7 +1819,7 @@ function renderModal() {
           <div class="liname">${esc(m.nama)}</div>
           <div class="limeta">
             ${m.tgl || '-'} ·
-            <span class="tag ${m.jenis === 'fisik' ? 't-fisik' : 't-ops'}">${m.jenis}</span>
+            <span class="tag ${m.jenis === 'fisik' ? 't-fisik' : 't-ops'}">${esc(m.jenis)}</span>
             ${m.ket ? ' · ' + esc(m.ket) : ''} ·
             oleh <strong>${esc(m.createdBy || '-')}</strong>
           </div>
@@ -2653,6 +1919,22 @@ function getPLLabel(f) {
   return '';
 }
 
+// Satu sumber angka keuangan untuk Dashboard, Untung & Rugi, dan grafik.
+// f = filter periode (lihat getPLDateFilter) atau null untuk semua waktu.
+function hitungKeuangan(f) {
+  const ok    = (tgl) => f ? inDateFilter(tgl, f) : true;
+  const asli  = _cache.kuitansi.filter(k => k.tipe === 'asli' && ok(k.tgl)).reduce((s, k) => s + k.total, 0);
+  const mF    = _cache.modal.filter(m => ok(m.tgl));
+  const pF    = _cache.plManual.filter(p => ok(p.tgl));
+  const lainM = pF.filter(p => p.type === 'masuk').reduce((s, p) => s + p.amount, 0);
+  const lainK = pF.filter(p => p.type === 'keluar').reduce((s, p) => s + p.amount, 0);
+  const fisik = mF.filter(m => m.jenis === 'fisik').reduce((s, m) => s + m.jumlah, 0);
+  const ops   = mF.filter(m => m.jenis === 'operasional').reduce((s, m) => s + m.jumlah, 0);
+  const subM  = asli + lainM;
+  const subK  = fisik + ops + lainK;
+  return { asli, lainM, lainK, fisik, ops, subM, subK, net: subM - subK };
+}
+
 function updatePL() {
   const f = getPLDateFilter();
   const lbl = document.getElementById('pl-period-label');
@@ -2661,18 +1943,7 @@ function updatePL() {
     else lbl.style.display = 'none';
   }
 
-  const kF = _cache.kuitansi.filter(k => k.tipe === 'asli' && (f ? inDateFilter(k.tgl, f) : true));
-  const mF = _cache.modal.filter(m    => f ? inDateFilter(m.tgl, f) : true);
-  const pF = _cache.plManual.filter(p => f ? inDateFilter(p.tgl, f) : true);
-
-  const asli   = kF.reduce((s, k) => s + k.total,  0);
-  const lainM  = pF.filter(p => p.type === 'masuk').reduce((s, p) => s + p.amount, 0);
-  const lainK  = pF.filter(p => p.type === 'keluar').reduce((s, p) => s + p.amount, 0);
-  const fisik  = mF.filter(m => m.jenis === 'fisik').reduce((s, m) => s + m.jumlah, 0);
-  const ops    = mF.filter(m => m.jenis === 'operasional').reduce((s, m) => s + m.jumlah, 0);
-  const subM   = asli + lainM;
-  const subK   = fisik + ops + lainK;
-  const net    = subM - subK;
+  const { asli, lainM, lainK, fisik, ops, subM, subK, net } = hitungKeuangan(f);
 
   const sv = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   sv('pl-asli',       fmt(asli));
@@ -2745,7 +2016,7 @@ async function simpanPL() {
     const type = document.getElementById('pl-type').value;
     const p = {
       id: Date.now(), type, amount: amt, desc,
-      tgl: new Date().toISOString().split('T')[0],
+      tgl: todayISO(),
       createdBy: CU.name, userId: CU.uid
     };
     await dbInsertPL(p);
@@ -2799,19 +2070,10 @@ function renderChart() {
     });
   }
 
-  const data = months.map(mo => ({
-    ...mo,
-    masuk:  _cache.kuitansi.filter(k =>
-      k.tipe === 'asli' && k.tgl &&
-      new Date(k.tgl + 'T00:00:00').getFullYear() === mo.y &&
-      new Date(k.tgl + 'T00:00:00').getMonth()    === mo.m
-    ).reduce((s, k) => s + k.total, 0),
-    keluar: _cache.modal.filter(m =>
-      m.tgl &&
-      new Date(m.tgl + 'T00:00:00').getFullYear() === mo.y &&
-      new Date(m.tgl + 'T00:00:00').getMonth()    === mo.m
-    ).reduce((s, m) => s + m.jumlah, 0)
-  }));
+  const data = months.map(mo => {
+    const r = hitungKeuangan({ type: 'month', m: mo.m, y: mo.y });
+    return { ...mo, masuk: r.subM, keluar: r.subK };
+  });
 
   const maxVal = Math.max(...data.map(d => Math.max(d.masuk, d.keluar)), 1);
   if (!data.some(d => d.masuk > 0 || d.keluar > 0)) {
@@ -2853,10 +2115,10 @@ function renderChart() {
 // ================================================================
 
 function renderDashboard() {
-  const asli  = _cache.kuitansi.filter(k => k.tipe === 'asli').reduce((s, k) => s + k.total, 0);
-  const kel   = _cache.modal.reduce((s, m) => s + m.jumlah, 0) +
-                _cache.plManual.filter(p => p.type === 'keluar').reduce((s, p) => s + p.amount, 0);
-  const saldo = asli - kel;
+  const kk    = hitungKeuangan(null);
+  const asli  = kk.subM;
+  const kel   = kk.subK;
+  const saldo = kk.net;
   const now   = new Date();
   const bln   = _cache.kuitansi.filter(k => {
     if (!k.tgl) return false;
@@ -2893,7 +2155,7 @@ function renderDashboard() {
           <div class="limeta">
             ${t.date || '-'} ·
             <span class="tag ${t.tag === 'asli' ? 't-asli' : t.tag === 'fiktif' ? 't-fiktif' : t.tag === 'fisik' ? 't-fisik' : 't-ops'}">
-              ${t.tag}
+              ${esc(t.tag)}
             </span>
             ${t.by ? ' · oleh <strong>' + esc(t.by) + '</strong>' : ''}
           </div>
@@ -2923,7 +2185,7 @@ function renderRiwayat() {
           <div class="liname">
             ${esc(k.no)} — ${esc(k.pelanggan)}
             <span class="tag ${k.tipe === 'asli' ? 't-asli' : 't-fiktif'}" style="margin-left:5px;">
-              ${k.tipe.toUpperCase()}
+              ${esc(String(k.tipe || '').toUpperCase())}
             </span>
           </div>
           <div class="limeta">
@@ -2994,11 +2256,11 @@ function renderLog() {
         <div class="log-msg">
           ${actIco(l.category, l.action)}&nbsp;
           <span class="log-who who-${esc(l.user)}">${esc(l.user)}</span>
-          ${l.detail}
+          ${safeLogHtml(l.detail)}
         </div>
         <div class="log-sub">
           ${fmtDT(l.ts)}&nbsp;·&nbsp;
-          <span class="tag t-log">${l.category}</span>
+          <span class="tag t-log">${esc(l.category)}</span>
         </div>
       </div>
     </div>`).join('');
@@ -3007,8 +2269,9 @@ function renderLog() {
 function eksporLogCSV() {
   const rows = ['Waktu,Pengguna,Role,Kategori,Aksi,Detail'];
   (_cache.logs || []).forEach(l => {
-    const d = (l.detail || '').replace(/<[^>]+>/g, '').replace(/,/g, ';');
-    rows.push(`"${fmtDT(l.ts)}","${l.user}","${l.role}","${l.category}","${l.action}","${d}"`);
+    const q = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const d = (l.detail || '').replace(/<[^>]+>/g, '');
+    rows.push([fmtDT(l.ts), l.user, l.role, l.category, l.action, d].map(q).join(','));
   });
   dlText(rows.join('\n'), 'log_aktivitas_' + nowStamp() + '.csv');
 }
@@ -3068,40 +2331,70 @@ async function doBackup(type) {
 function doRestore(input, type) {
   const file = input.files[0];
   if (!file) return;
+  if (!CU || CU.role !== 'owner') {
+    showToast('Akses Ditolak', 'Hanya owner yang dapat melakukan restore.', '🔒');
+    input.value = '';
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = async function (e) {
     try {
       const p = JSON.parse(e.target.result);
+      if (!p || !Array.isArray(p.kuitansi)) throw new Error('Format file tidak valid (kuitansi tidak ditemukan)');
 
-      if (type === 'all') {
-        if (!p.kuitansi) throw new Error('Format file tidak valid (kuitansi tidak ditemukan)');
-        if (!confirm('Restore akan menambahkan semua data dari file ke database. Lanjutkan?')) return;
+      const all = type === 'all';
+      const hasId = (r) => r && r.id != null;
+      const kw  = p.kuitansi.filter(hasId);
+      const mo  = all ? (p.modal    || []).filter(hasId) : [];
+      const pl  = all ? (p.plManual || []).filter(hasId) : [];
+      const tm  = all ? (p.templates || []).filter(t => t && t.name &&
+                    !_cache.templates.some(x => x.name === t.name)) : [];
 
-        setSyncBadge('saving', 'Merestore...');
-        for (const k  of p.kuitansi  || []) try { await dbInsertKwt(k,   true); } catch (_) {}
-        for (const m  of p.modal     || []) try { await dbInsertModal(m,  true); } catch (_) {}
-        for (const pl of p.plManual  || []) try { await dbInsertPL(pl,    true); } catch (_) {}
-        await addLog('restore', 'restore', `restore semua data dari backup (${file.name})`);
-        await dbLoad();
-        renderDashboard();
-        renderBackupInfo();
-        setSyncBadge('ok', 'Restore selesai');
-        showToast('Restore Berhasil', file.name, '✅');
+      const ringkas = `${kw.length} kuitansi` + (all ? `, ${mo.length} modal, ${pl.length} catatan P&L, ${tm.length} template baru` : '');
+      if (!confirm(`Restore ${ringkas} dari file ini? Data dengan ID yang sudah ada akan dilewati.`)) { input.value = ''; return; }
 
-      } else if (type === 'kuitansi') {
-        if (!p.kuitansi) throw new Error('Format file tidak valid');
-        if (!confirm(`Restore ${p.kuitansi.length} kuitansi ke database?`)) return;
+      setSyncBadge('saving', 'Merestore...');
+      const hitung = () => _cache.kuitansi.length + _cache.modal.length + _cache.plManual.length + _cache.templates.length;
+      await dbLoad();
+      const before = hitung();
 
-        setSyncBadge('saving', 'Merestore...');
-        for (const k of p.kuitansi) try { await dbInsertKwt(k, true); } catch (_) {}
-        await addLog('restore', 'restore', `restore kuitansi (${p.kuitansi.length} data dari ${file.name})`);
-        await dbLoad();
-        setSyncBadge('ok', 'Restore selesai');
-        showToast('Restore Berhasil', `${p.kuitansi.length} kuitansi ditambahkan`, '✅');
+      let gagal = 0, pesanError = '';
+      const jalankan = async (tabel, baris, insertBiasa) => {
+        for (let i = 0; i < baris.length; i += 200) {
+          const potong = baris.slice(i, i + 200);
+          const q = insertBiasa
+            ? sbClient.from(tabel).insert(potong)
+            : sbClient.from(tabel).upsert(potong, { onConflict: 'id', ignoreDuplicates: true });
+          const { error } = await q;
+          if (error) { gagal += potong.length; pesanError = error.message; }
+        }
+      };
+
+      await jalankan('pm_kuitansi', kw.map(kwtRow));
+      if (all) {
+        await jalankan('pm_modal',     mo.map(modalRow));
+        await jalankan('pm_pl_manual', pl.map(plRow));
+        await jalankan('pm_item_templates', tm.map(t => ({
+          name: t.name, default_price: t.default_price, unit: t.unit, created_by: t.created_by || CU.name
+        })), true);
       }
 
+      await dbLoad();
+      const ditambah = hitung() - before;
+      await addLog('restore', 'restore', `restore dari ${file.name}: ${ditambah} data ditambahkan, ${gagal} gagal`);
+      renderDashboard();
+      renderBackupInfo();
+
+      if (gagal > 0) {
+        setSyncBadge('err', 'Restore sebagian');
+        showToast('Restore Sebagian Gagal', `${ditambah} ditambahkan, ${gagal} gagal: ${pesanError}`, '⚠️', 10000);
+      } else {
+        setSyncBadge('ok', 'Restore selesai');
+        showToast('Restore Selesai', `${ditambah} data baru ditambahkan (sisanya sudah ada).`, '✅');
+      }
     } catch (err) {
+      setSyncBadge('err', 'Gagal');
       showToast('Gagal Restore', err.message, '❌');
     }
     input.value = '';
@@ -3140,7 +2433,7 @@ function renderBackupInfo() {
     await _cdnReady; // Tunggu Supabase & jsPDF siap
 
 // Set tanggal default ke hari ini
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayISO();
   const qTgl  = document.getElementById('q-tgl');
   const mTgl  = document.getElementById('m-tgl');
   if (qTgl) qTgl.value = today;
@@ -3152,6 +2445,10 @@ function renderBackupInfo() {
 
   // Render tabel item kosong
   renderRows();
+
+  // Terapkan tema & sidebar state sebelum apapun
+  applyTheme();
+  applysidebar();
 
   // Cek apakah konfigurasi Supabase sudah ada
   const cfg = getSbConfig();
@@ -3171,22 +2468,27 @@ function renderBackupInfo() {
   }
   if (lmsg) lmsg.textContent = 'Memeriksa sesi...';
 
-  // Cek sesi aktif dari Supabase Auth (auto-restore login)
+  // Sesi lama berbasis localStorage sudah tidak dipakai (bisa dipalsukan) → bersihkan
+  clearSession();
+
+  // Pulihkan sesi dari Supabase Auth (token dikelola Supabase, peran dari app_metadata)
   try {
     const { data: { session } } = await sbClient.auth.getSession();
     if (session) {
       const matchKey = Object.keys(USERS).find(k => USERS[k].email === session.user.email);
-      if (matchKey) {
-        CU       = { key: matchKey, uid: session.user.id, ...USERS[matchKey] };
-        selKey   = matchKey;
+      const user = matchKey ? buildCU(matchKey, session.user) : null;
+      if (user) {
+        CU     = user;
+        selKey = matchKey;
         applyUserUI(CU);
         await dbLoad();
         renderDashboard();
         startRealtime();
         requestNotifPermission();
-        console.log('[Init] Sesi dipulihkan untuk:', CU.name);
-        return; // Langsung masuk tanpa login screen
+        console.log('[Init] Sesi Auth dipulihkan untuk:', CU.name);
+        return;
       }
+      try { await sbClient.auth.signOut(); } catch (_) {}
     }
   } catch (e) {
     console.warn('[Init] Session check gagal:', e.message);
@@ -3195,7 +2497,6 @@ function renderBackupInfo() {
   // Tidak ada sesi → tampilkan login
   hideLoading();
   document.getElementById('login-wrap').style.display = 'flex';
-  clearTimeout(loadTimer);
 
 
 
@@ -3204,6 +2505,3 @@ function renderBackupInfo() {
     showError('❌ Error: ' + (e.message || e) + '<br><a href="" style="color:#3b82f6">Refresh halaman</a>');
   }
 })();
-</script>
-</body>
-</html>
