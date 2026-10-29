@@ -892,6 +892,23 @@ function applyUserUI(u) {
   autoNo();
 }
 
+// Pesan login yang spesifik (bukan satu pesan umum untuk semua error)
+function pesanLogin(err, email) {
+  const m = String((err && (err.message || err.error_description)) || '');
+  const akun = ' (akun: ' + email + ')';
+  if (/Email not confirmed/i.test(m))
+    return 'Email akun belum dikonfirmasi. Di Supabase: Authentication → Users → klik akun → Confirm user.' + akun;
+  if (/Invalid login credentials/i.test(m))
+    return 'Password salah, atau akun belum dibuat di Supabase (Authentication → Users).' + akun;
+  if (/fetch|network|timeout|ECONN|load failed/i.test(m) || (err && err.status === 0))
+    return 'Tidak bisa menghubungi Supabase. Cek internet; project free tier mungkin ter-pause (klik Restore di dashboard Supabase).';
+  if (/rate limit|too many/i.test(m))
+    return 'Terlalu banyak percobaan login. Tunggu beberapa menit lalu coba lagi.';
+  if (/invalid api key|apikey|JWT/i.test(m))
+    return 'Kunci Supabase di js/config.js ditolak: ' + m;
+  return 'Login gagal: ' + (m || 'penyebab tidak diketahui') + akun;
+}
+
 async function doLogin() {
   const errEl = document.getElementById('lerr');
   errEl.style.display = 'none';
@@ -910,31 +927,42 @@ async function doLogin() {
   const btn = document.getElementById('login-btn');
   btn.disabled = true; btn.textContent = '⏳ Masuk...';
 
+  // Tahap 1: autentikasi (error di sini = masalah akun/password/koneksi)
+  let data = null, error = null;
   try {
-    const { data, error } = await sbClient.auth.signInWithPassword({
-      email: ud.email,
-      password: pass
-    });
-    if (error) throw error;
+    ({ data, error } = await sbClient.auth.signInWithPassword({ email: ud.email, password: pass }));
+  } catch (e) { error = e; }
 
-    // Peran diambil dari token (app_metadata), bukan dari kode di browser
-    const user = buildCU(selKey, data.user);
-    if (!user) {
-      try { await sbClient.auth.signOut(); } catch (_) {}
-      errEl.textContent = 'Akun ini belum diberi peran (admin/owner). Jalankan sql/001_amankan_role.sql di Supabase, lalu coba lagi.';
-      errEl.style.display = 'block';
-    } else {
-      CU = user;
-      applyUserUI(CU);
-      await dbLoad();
-      renderDashboard();
-      startRealtime();
-      requestNotifPermission();
-      addLog('login', 'login', `masuk sebagai ${CU.name} (${CU.role})`);
-    }
-  } catch (e) {
-    errEl.textContent = 'Login gagal: email/password salah atau akun belum dibuat di Supabase.';
+  if (error || !data || !data.user) {
+    errEl.textContent = pesanLogin(error, ud.email);
     errEl.style.display = 'block';
+    console.warn('[Login] gagal:', error);
+    btn.disabled = false; btn.textContent = 'Masuk →';
+    return;
+  }
+
+  // Peran diambil dari token (app_metadata), bukan dari kode di browser
+  const user = buildCU(selKey, data.user);
+  if (!user) {
+    try { await sbClient.auth.signOut(); } catch (_) {}
+    errEl.textContent = 'Login benar, tetapi akun ini belum diberi peran (admin/owner). Jalankan sql/001_amankan_role.sql di Supabase, lalu coba lagi.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Masuk →';
+    return;
+  }
+
+  // Tahap 2: masuk ke aplikasi (error di sini BUKAN salah password)
+  try {
+    CU = user;
+    applyUserUI(CU);
+    await dbLoad();
+    renderDashboard();
+    startRealtime();
+    requestNotifPermission();
+    addLog('login', 'login', `masuk sebagai ${CU.name} (${CU.role})`);
+  } catch (e) {
+    console.error('[Login] error setelah autentikasi:', e);
+    showToast('Login berhasil, tetapi gagal memuat tampilan', e.message || String(e), '⚠️', 0);
   }
 
   btn.disabled = false; btn.textContent = 'Masuk →';
