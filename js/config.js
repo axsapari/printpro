@@ -9,8 +9,8 @@
 // Format baris di bawah dibaca juga oleh scripts/keepalive.mjs.
 // ================================================================
 const SUPABASE_DEFAULT = {
-  url: '',
-  key: ''
+  url: 'https://xbzifertjqixigwrlrod.supabase.co',
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiemlmZXJ0anFpeGlnd3Jscm9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTkzODQsImV4cCI6MjA5ODMzNTM4NH0.pzFCIH6_SJWgnwvWZ8mg544KosTPi-EttxmAG1I5dg4'
 };
 
 // Daftar akun (tampilan saja). Password TIDAK disimpan di kode:
