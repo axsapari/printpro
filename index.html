@@ -31,6 +31,22 @@
   <style>@keyframes ld{0%,100%{opacity:.2;transform:scale(.8);}50%{opacity:1;transform:scale(1);}}</style>
 </div>
 
+<!-- MODAL BATALKAN KUITANSI -->
+<div class="overlay no-print" id="modal-batal" style="display:none;">
+  <div class="overlay-box">
+    <div class="overlay-h"><span id="batal-judul">Batalkan Kuitansi</span>
+      <button class="overlay-close" onclick="tutupBatal()">×</button></div>
+    <div class="alert-w">Kuitansi yang dibatalkan tidak dihitung sebagai pemasukan, tetapi tetap tersimpan dan tampil bertanda DIBATALKAN. Owner bisa memulihkannya.</div>
+    <div class="fg"><label>Alasan pembatalan</label>
+      <textarea id="batal-alasan" placeholder="Mis. salah input harga / pelanggan membatalkan pesanan"></textarea></div>
+    <div id="batal-err" class="lerr"></div>
+    <div class="acts">
+      <button class="btn btn-o" onclick="tutupBatal()">Kembali</button>
+      <button class="btn btn-r" id="btn-konfirmasi-batal" style="padding:9px 16px;font-size:13px;" onclick="konfirmasiBatal()">Batalkan Kuitansi</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div class="toast-wrap" id="toast-wrap"></div>
 
@@ -222,12 +238,17 @@
           <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="s-keluar">Rp 0</div></div>
           <div class="stat-card"><div class="slbl">Saldo Bersih</div><div class="sval sv-b" id="s-saldo">Rp 0</div></div>
           <div class="stat-card"><div class="slbl">Order Bulan Ini</div><div class="sval sv-o" id="s-order">0</div></div>
+          <div class="stat-card"><div class="slbl">Piutang Belum Lunas</div><div class="sval sv-o" id="s-piutang">Rp 0</div></div>
         </div>
         <div class="card"><div class="chdr">Transaksi Terbaru</div><div id="db-recent"><div class="empty">Memuat...</div></div></div>
       </div>
 
       <!-- KUITANSI -->
       <div id="page-kuitansi" class="page">
+        <div id="edit-banner" class="alert-w no-print" style="display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span>✏️ Mode edit kuitansi <strong id="edit-banner-no"></strong>. Perubahan dicatat di Log Aktivitas.</span>
+          <button class="btn btn-o btn-sm" onclick="batalEdit()">Batal Edit</button>
+        </div>
         <div class="card no-print">
           <div class="chdr">Tipe Kuitansi</div>
           <div class="fg"><label>Jenis</label>
@@ -252,8 +273,11 @@
             <div class="fg"><label>Nomor Kuitansi</label><input type="text" id="q-no"></div>
             <div class="fg"><label>Tanggal</label><input type="date" id="q-tgl"></div>
             <div class="fg"><label>Status</label>
-              <select id="q-status"><option>LUNAS</option><option>BELUM LUNAS</option><option>DP</option></select>
+              <select id="q-status" onchange="toggleDibayar()"><option>LUNAS</option><option>BELUM LUNAS</option><option>DP</option></select>
             </div>
+          </div>
+          <div class="fg" id="q-dibayar-wrap" style="display:none;max-width:260px;"><label>Dibayar / DP (Rp)</label>
+            <input type="number" id="q-dibayar" min="0" placeholder="0" style="text-align:right;">
           </div>
           <div class="g2">
             <div class="fg"><label>Nama Pelanggan</label><input type="text" id="q-pelanggan" placeholder="Nama customer / instansi"></div>
@@ -388,7 +412,7 @@
         <div class="card">
           <div class="chdr">Semua Kuitansi
             <select id="filter-tipe" onchange="renderRiwayat()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
-              <option value="semua">Semua</option><option value="asli">Asli</option><option value="fiktif">Fiktif</option>
+              <option value="semua">Semua</option><option value="asli">Asli</option><option value="fiktif">Fiktif</option><option value="piutang">Piutang</option><option value="batal">Dibatalkan</option>
             </select>
           </div>
           <div id="kwt-list"><div class="empty">Memuat...</div></div>

@@ -9,7 +9,7 @@ index.html          kerangka halaman
 css/style.css       tampilan
 js/config.js        daftar akun (tanpa password) + skema SQL untuk setup wizard
 js/app.js           seluruh logika aplikasi
-sql/                migrasi database untuk Supabase SQL Editor
+sql/                migrasi database untuk Supabase SQL Editor (001 peran, 002 keep-alive, 003 edit/batal/piutang)
 scripts/keepalive.mjs   ping terjadwal agar Supabase tidak ter-pause
 .github/workflows/      jadwal GitHub Actions untuk keep-alive
 ```
@@ -38,6 +38,16 @@ Project yang sudah terlanjur ter-pause dapat dipulihkan lewat tombol *Restore* d
 ## Database yang sudah berjalan
 
 Jalankan `sql/001_amankan_role.sql` di Supabase SQL Editor, lalu minta semua pengguna logout dan login ulang.
+
+## Edit, pembatalan, dan piutang (SQL 003)
+
+Jalankan `sql/003_edit_batal_piutang.sql` di Supabase SQL Editor (aman dijalankan ulang). Fitur (semua perubahan **khusus owner** dan tercatat di Log Aktivitas):
+
+- **Edit kuitansi**: tombol ✏️ Edit di Riwayat membuka formulir; log mencatat apa yang berubah (mis. total Rp 100.000 → Rp 250.000).
+- **Batalkan / Pulihkan**: pembatalan wajib beralasan. Kuitansi batal tetap tersimpan, bertanda DIBATALKAN, dan tidak dihitung di pemasukan, laba rugi, grafik, jumlah order, maupun piutang.
+- **DP & piutang**: status DP meminta jumlah dibayar; struk/PDF menampilkan Dibayar dan Sisa. Dashboard menampilkan *Piutang Belum Lunas*, Riwayat punya filter Piutang/Dibatalkan, dan tombol ✔ Lunas menandai pelunasan.
+- Pemasukan tetap dihitung **saat kuitansi dibuat**; DP/sisa hanya pencatatan piutang.
+- Sebelum SQL 003 dijalankan, kuitansi biasa tetap bisa disimpan; fitur baru menampilkan petunjuk untuk menjalankan SQL 003.
 
 ## Keamanan
 

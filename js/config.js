@@ -55,7 +55,11 @@ create table if not exists pm_kuitansi (
   pelanggan   text, alamatpl text, catatan text,
   items       jsonb        default '[]',
   diskon      numeric      default 0,
-  total       numeric      default 0
+  total       numeric      default 0,
+  dibayar     numeric,
+  batal       boolean      not null default false,
+  batal_alasan text, batal_oleh text, batal_at timestamptz,
+  diubah_at   timestamptz, diubah_oleh text
 );
 create table if not exists pm_modal (
   id          bigint       primary key,
@@ -105,6 +109,7 @@ $$;
 drop policy if exists "kw_sel" on pm_kuitansi;
 drop policy if exists "kw_ins" on pm_kuitansi;
 drop policy if exists "kw_del" on pm_kuitansi;
+drop policy if exists "kw_upd" on pm_kuitansi;
 drop policy if exists "mo_all" on pm_modal;
 drop policy if exists "pl_all" on pm_pl_manual;
 drop policy if exists "lo_all" on pm_logs;
@@ -118,6 +123,7 @@ create policy "kw_sel" on pm_kuitansi for select to authenticated using (get_use
 create policy "kw_ins" on pm_kuitansi for insert to authenticated
   with check (get_user_role() in ('admin','owner') and (auth.uid() = user_id or get_user_role() = 'owner'));
 create policy "kw_del" on pm_kuitansi for delete to authenticated using (get_user_role() = 'owner');
+create policy "kw_upd" on pm_kuitansi for update to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');
 
 -- Modal & P&L: hanya owner
 create policy "mo_all" on pm_modal     for all to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');

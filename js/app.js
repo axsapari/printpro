@@ -293,11 +293,14 @@ async function dbLoad() {
   setSyncBadge('loading', 'Memuat...');
   try {
     // Jalankan 5 query secara paralel
+    // Tabel khusus owner tidak diminta untuk admin (RLS tetap penjaga sebenarnya)
+    const isOwner = !!(CU && CU.role === 'owner');
+    const kosong = Promise.resolve({ data: [], error: null });
     const [r1, r2, r3, r4, r5] = await Promise.all([
       sbClient.from('pm_kuitansi').select('*').order('id', { ascending: true }),
-      sbClient.from('pm_modal').select('*').order('id', { ascending: true }),
-      sbClient.from('pm_pl_manual').select('*').order('id', { ascending: true }),
-      sbClient.from('pm_logs').select('*').order('ts', { ascending: false }).limit(500),
+      isOwner ? sbClient.from('pm_modal').select('*').order('id', { ascending: true }) : kosong,
+      isOwner ? sbClient.from('pm_pl_manual').select('*').order('id', { ascending: true }) : kosong,
+      isOwner ? sbClient.from('pm_logs').select('*').order('ts', { ascending: false }).limit(500) : kosong,
       sbClient.from('pm_item_templates').select('*').order('name', { ascending: true })
     ]);
 
@@ -330,7 +333,10 @@ function mapKwt(r) {
     tipe: r.tipe, namapt: r.namapt, kontakpt: r.kontakpt, alamatpt: r.alamatpt,
     no: r.no, tgl: r.tgl, status: r.status, pelanggan: r.pelanggan,
     alamatpl: r.alamatpl, catatan: r.catatan, items: r.items || [],
-    diskon: r.diskon || 0, total: r.total || 0
+    diskon: r.diskon || 0, total: r.total || 0,
+    dibayar: r.dibayar == null ? null : Number(r.dibayar),
+    batal: !!r.batal, batalAlasan: r.batal_alasan || '', batalOleh: r.batal_oleh || '', batalAt: r.batal_at || null,
+    diubahAt: r.diubah_at || null, diubahOleh: r.diubah_oleh || ''
   };
 }
 function mapModal(r) {
@@ -360,7 +366,7 @@ function mapLog(r) {
 
 // Pembentuk baris DB dari objek app (dipakai insert biasa & restore massal)
 function kwtRow(k) {
-  return {
+  const row = {
     id: k.id, timestamp: k.timestamp, created_by: k.createdBy,
     ...(k.userId ? { user_id: k.userId } : {}),
     tipe: k.tipe, namapt: k.namapt, kontakpt: k.kontakpt, alamatpt: k.alamatpt,
@@ -368,6 +374,10 @@ function kwtRow(k) {
     alamatpl: k.alamatpl, catatan: k.catatan, items: k.items,
     diskon: k.diskon, total: k.total
   };
+  // Kolom hasil SQL 003: hanya dikirim bila terisi, supaya kuitansi biasa tetap bisa disimpan
+  if (k.status === 'DP' && k.dibayar != null) row.dibayar = k.dibayar;
+  if (k.batal) Object.assign(row, { batal: true, batal_alasan: k.batalAlasan, batal_oleh: k.batalOleh, batal_at: k.batalAt });
+  return row;
 }
 function modalRow(m) {
   return {
@@ -399,6 +409,30 @@ async function dbDeleteKwt(id) {
   const { error } = await sbClient.from('pm_kuitansi').delete().eq('id', id);
   if (error) throw error;
   _cache.kuitansi = _cache.kuitansi.filter(x => x.id !== id);
+}
+
+// Mengubah satu kuitansi. Hanya owner yang lolos RLS; RLS yang menolak TIDAK menghasilkan error
+// (0 baris berubah), jadi hasilnya diperiksa agar tidak ada "berhasil palsu".
+async function dbUpdateKwt(id, patch) {
+  const { data, error } = await sbClient.from('pm_kuitansi').update(patch).eq('id', id).select();
+  if (error) throw error;
+  if (!data || !data.length) {
+    throw new Error('Tidak ada data yang berubah. Hanya owner yang boleh mengubah kuitansi (pastikan SQL 003 sudah dijalankan), atau kuitansi sudah dihapus.');
+  }
+  const baru = mapKwt(data[0]);
+  const i = _cache.kuitansi.findIndex(x => x.id === id);
+  if (i >= 0) _cache.kuitansi[i] = baru; else _cache.kuitansi.push(baru);
+  return baru;
+}
+
+// Bila kolom baru belum ada di database (SQL 003 belum dijalankan), beri petunjuk yang jelas
+function pesanKolomBaru(e) {
+  const m = String((e && e.message) || e || '');
+  if (e && (e.code === 'PGRST204' || e.code === '42703' ||
+      /column .* (does not exist|of .* in the schema cache)|Could not find the/i.test(m))) {
+    return 'Database belum diperbarui. Jalankan sql/003_edit_batal_piutang.sql di Supabase SQL Editor, lalu coba lagi. (' + m + ')';
+  }
+  return m;
 }
 
 async function dbInsertModal(m, upsert = false) {
@@ -484,7 +518,8 @@ async function addLog(category, action, detail) {
 function ldClass(cat, act) {
   if (act === 'login')   return 'ld-login';
   if (act === 'logout')  return 'ld-logout';
-  if (act === 'hapus')   return 'ld-hapus';
+  if (act === 'hapus' || act === 'batal') return 'ld-hapus';
+  if (act === 'edit' || act === 'pulih' || act === 'lunas') return 'ld-pl';
   if (cat === 'modal')   return 'ld-modal';
   if (cat === 'pl')      return 'ld-pl';
   return 'ld-masuk';
@@ -494,6 +529,10 @@ function actIco(cat, act) {
   if (act === 'logout')    return '🚪';
   if (act === 'hapus')     return '🗑️';
   if (act === 'pdf')       return '📄';
+  if (act === 'edit')      return '✏️';
+  if (act === 'batal')     return '⛔';
+  if (act === 'pulih')     return '♻️';
+  if (act === 'lunas')     return '✅';
   if (cat === 'kuitansi')  return '🧾';
   if (cat === 'modal')     return '💰';
   if (cat === 'pl')        return '📊';
@@ -541,6 +580,7 @@ function startRealtime() {
 
     // DELETE kuitansi, semua perubahan modal, P&L, template
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'pm_kuitansi' },     () => debouncedReload())
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pm_kuitansi' },     () => debouncedReload())
     .on('postgres_changes', { event: '*',      schema: 'public', table: 'pm_modal' },         () => debouncedReload())
     .on('postgres_changes', { event: '*',      schema: 'public', table: 'pm_pl_manual' },     () => debouncedReload())
     .on('postgres_changes', { event: '*',      schema: 'public', table: 'pm_item_templates' },() => debouncedReload())
@@ -1414,16 +1454,39 @@ function autoNo() {
   if (el) el.value = 'KWT-' + mm + '-' + String(maxN + 1).padStart(3, '0');
 }
 
+let _editId = null;   // id kuitansi yang sedang diedit (null = mode buat baru)
+
+function toggleDibayar() {
+  const st = document.getElementById('q-status').value;
+  const wrap = document.getElementById('q-dibayar-wrap');
+  if (wrap) wrap.style.display = st === 'DP' ? '' : 'none';
+}
+
+function setModeEdit(on, no) {
+  const banner = document.getElementById('edit-banner');
+  const btn    = document.getElementById('btn-simpan-kwt');
+  if (banner) {
+    banner.style.display = on ? 'flex' : 'none';
+    const lbl = document.getElementById('edit-banner-no');
+    if (lbl) lbl.textContent = no || '';
+  }
+  if (btn) btn.textContent = on ? '💾 Simpan Perubahan' : '💾 Simpan';
+}
+
 function resetKuitansi() {
+  _editId = null;
+  setModeEdit(false);
   rows = [];
   renderRows();
   document.getElementById('q-pelanggan').value = '';
   document.getElementById('q-alamatpl').value  = '';
   document.getElementById('q-catatan').value   = 'Barang yang sudah diambil tidak dapat dikembalikan lagi.';
   document.getElementById('q-status').value    = 'LUNAS';
+  document.getElementById('q-dibayar').value   = '';
   document.getElementById('q-diskon').value    = 0;
   document.getElementById('q-tipe').value      = 'asli';
   onTipeChange();
+  toggleDibayar();
   document.getElementById('rc-container').style.display  = 'none';
   document.getElementById('print-acts').style.display    = 'none';
   _lastKwt = null;
@@ -1432,6 +1495,7 @@ function resetKuitansi() {
 
 function getFormData() {
   const { net, dis } = recalc();
+  const status = document.getElementById('q-status').value;
   return {
     tipe:      document.getElementById('q-tipe').value,
     namapt:    document.getElementById('q-namapt').value,
@@ -1439,14 +1503,31 @@ function getFormData() {
     alamatpt:  document.getElementById('q-alamatpt').value,
     no:        document.getElementById('q-no').value,
     tgl:       document.getElementById('q-tgl').value,
-    status:    document.getElementById('q-status').value,
+    status,
     pelanggan: document.getElementById('q-pelanggan').value,
     alamatpl:  document.getElementById('q-alamatpl').value,
     catatan:   document.getElementById('q-catatan').value,
     items:     rows.map(r => ({ d: r.d, q: r.q, h: r.h })),
     diskon:    dis,
-    total:     net
+    total:     net,
+    dibayar:   status === 'DP' ? (parseFloat(document.getElementById('q-dibayar').value) || 0) : null
   };
+}
+
+// Sisa yang belum dibayar (piutang) untuk satu kuitansi
+function sisaKwt(k) {
+  if (!k || k.batal) return 0;
+  if (k.status === 'DP') return Math.max(0, (k.total || 0) - (k.dibayar || 0));
+  if (k.status === 'BELUM LUNAS') return k.total || 0;
+  return 0;
+}
+
+// Baris tambahan di bawah Total untuk struk/PDF: [label, nilai]
+function barisPembayaran(k) {
+  const out = [];
+  if (k.status === 'DP') out.push(['Dibayar (DP)', Math.min(k.total || 0, k.dibayar || 0)]);
+  if (k.status === 'DP' || k.status === 'BELUM LUNAS') out.push(['Sisa Pembayaran', sisaKwt({ ...k, batal: false })]);
+  return out;
 }
 
 // ================================================================
@@ -1481,6 +1562,7 @@ function buildReceipt(k, inSystem) {
     <div class="rc-company-detail">${esc(k.alamatpt || '')}<br>Kontak: ${esc(k.kontakpt || '')}</div>
     <hr class="rc-divider">
     <div class="rc-title-line"><span class="rc-title">KUITANSI PENJUALAN</span></div>
+    ${k.batal ? `<div class="rc-batal">DIBATALKAN${k.batalAlasan ? ' — ' + esc(k.batalAlasan) : ''}</div>` : ''}
     <div class="rc-two-col">
       <div>
         <div class="rc-sec-title">Pelanggan</div>
@@ -1504,7 +1586,10 @@ function buildReceipt(k, inSystem) {
       <tfoot><tr>
         <td colspan="4" style="text-align:right;">Total</td>
         <td class="rnum">Rp ${Math.round(k.total).toLocaleString('id-ID')}</td>
-      </tr></tfoot>
+      </tr>${barisPembayaran(k).map(b => `<tr>
+        <td colspan="4" style="text-align:right;">${esc(b[0])}</td>
+        <td class="rnum">Rp ${Math.round(b[1]).toLocaleString('id-ID')}</td>
+      </tr>`).join('')}</tfoot>
     </table>
     <div class="rc-bottom">
       <div>
@@ -1537,6 +1622,16 @@ async function simpanKuitansi() {
     return;
   }
 
+  if (k.status === 'DP' && !(k.dibayar > 0)) {
+    showToast('Validasi', 'Status DP: isi jumlah yang sudah dibayar (DP).', '⚠️');
+    return;
+  }
+  if (k.status === 'DP' && k.dibayar > k.total) {
+    showToast('Validasi', 'Jumlah DP tidak boleh melebihi total.', '⚠️');
+    return;
+  }
+  if (_editId) return simpanEdit(k);
+
   const btn = document.getElementById('btn-simpan-kwt');
   btn.disabled = true; btn.textContent = '💾 Menyimpan...';
   setSyncBadge('saving', 'Menyimpan...');
@@ -1567,7 +1662,7 @@ async function simpanKuitansi() {
       autoNo();
       showToast('Nomor Kuitansi Bentrok', 'Nomor sudah dipakai. Nomor baru sudah diisi — klik Simpan lagi.', '⚠️', 7000);
     } else {
-      showToast('Gagal Menyimpan', e.message, '❌');
+      showToast('Gagal Menyimpan', pesanKolomBaru(e), '❌', 9000);
     }
   }
 
@@ -1625,9 +1720,15 @@ function exportPDF() {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    var judul = 'KUITANSI PENJUALAN' + (k.tipe === 'fiktif' ? '  [FIKTIF]' : '');
+    var judul = 'KUITANSI PENJUALAN' + (k.tipe === 'fiktif' ? '  [FIKTIF]' : '') + (k.batal ? '  [DIBATALKAN]' : '');
     doc.text(judul, W / 2, y, { align: 'center' });
-    y += 10;
+    y += 6;
+    if (k.batal && k.batalAlasan) {
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(9);
+      doc.text('Dibatalkan: ' + k.batalAlasan, W / 2, y, { align: 'center' });
+      y += 5;
+    }
+    y += 4;
 
     // ── 2 KOLOM INFO
     var C2 = W / 2 + 5;
@@ -1695,11 +1796,16 @@ function exportPDF() {
       tableBody.push(['', '', '', 'Diskon', '- Rp ' + Math.round(k.diskon).toLocaleString('id-ID')]);
     }
 
+    var footRows = [['', '', '', 'Total', 'Rp ' + Math.round(k.total).toLocaleString('id-ID')]];
+    barisPembayaran(k).forEach(function(b) {
+      footRows.push(['', '', '', b[0], 'Rp ' + Math.round(b[1]).toLocaleString('id-ID')]);
+    });
+
     doc.autoTable({
       startY: y,
       head: [['No', 'Deskripsi', 'Qty', 'Harga Satuan', 'Subtotal']],
       body: tableBody,
-      foot: [['', '', '', 'Total', 'Rp ' + Math.round(k.total).toLocaleString('id-ID')]],
+      foot: footRows,
       styles: {
         fontSize: 9,
         cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 },
@@ -1973,7 +2079,7 @@ function getPLLabel(f) {
 // f = filter periode (lihat getPLDateFilter) atau null untuk semua waktu.
 function hitungKeuangan(f) {
   const ok    = (tgl) => f ? inDateFilter(tgl, f) : true;
-  const asli  = _cache.kuitansi.filter(k => k.tipe === 'asli' && ok(k.tgl)).reduce((s, k) => s + k.total, 0);
+  const asli  = _cache.kuitansi.filter(k => k.tipe === 'asli' && !k.batal && ok(k.tgl)).reduce((s, k) => s + k.total, 0);
   const mF    = _cache.modal.filter(m => ok(m.tgl));
   const pF    = _cache.plManual.filter(p => ok(p.tgl));
   const lainM = pF.filter(p => p.type === 'masuk').reduce((s, p) => s + p.amount, 0);
@@ -2171,7 +2277,7 @@ function renderDashboard() {
   const saldo = kk.net;
   const now   = new Date();
   const bln   = _cache.kuitansi.filter(k => {
-    if (!k.tgl) return false;
+    if (!k.tgl || k.batal) return false;
     const d = new Date(k.tgl + 'T00:00:00');
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
@@ -2181,10 +2287,13 @@ function renderDashboard() {
   document.getElementById('s-saldo').textContent  = fmt(saldo);
   document.getElementById('s-saldo').className    = 'sval ' + (saldo >= 0 ? 'sv-g' : 'sv-r');
   document.getElementById('s-order').textContent  = bln;
+  const piutang = _cache.kuitansi.filter(k => k.tipe === 'asli').reduce((t, k) => t + sisaKwt(k), 0);
+  const pEl = document.getElementById('s-piutang');
+  if (pEl) pEl.textContent = fmt(piutang);
 
   // 7 transaksi terbaru (gabungan kuitansi + modal)
   const all = [
-    ..._cache.kuitansi.map(k => ({
+    ..._cache.kuitansi.filter(k => !k.batal).map(k => ({
       lbl: k.pelanggan + ' — ' + k.no, date: k.tgl, amt: k.total,
       pos: true, tag: k.tipe, ico: '🧾', ic: 'ico-g', by: k.createdBy
     })),
@@ -2221,14 +2330,19 @@ function renderDashboard() {
 
 function renderRiwayat() {
   const f = document.getElementById('filter-tipe').value;
-  const list = f === 'semua' ? _cache.kuitansi : _cache.kuitansi.filter(k => k.tipe === f);
+  let list = _cache.kuitansi;
+  if (f === 'asli' || f === 'fiktif') list = list.filter(k => k.tipe === f);
+  else if (f === 'batal')             list = list.filter(k => k.batal);
+  else if (f === 'piutang')           list = list.filter(k => k.tipe === 'asli' && sisaKwt(k) > 0);
   const el = document.getElementById('kwt-list');
   const isOwner = CU && CU.role === 'owner';
 
-  if (!list.length) { el.innerHTML = '<div class="empty">Belum ada kuitansi</div>'; return; }
+  if (!list.length) { el.innerHTML = '<div class="empty">' + (f === 'piutang' ? 'Tidak ada piutang 🎉' : 'Belum ada kuitansi') + '</div>'; return; }
 
-  el.innerHTML = [...list].reverse().map(k => `
-    <div class="li-row">
+  el.innerHTML = [...list].reverse().map(k => {
+    const sisa = sisaKwt(k);
+    return `
+    <div class="li-row ${k.batal ? 'kwt-batal' : ''}">
       <div class="li-l">
         <div class="ico ico-g">🧾</div>
         <div>
@@ -2237,19 +2351,28 @@ function renderRiwayat() {
             <span class="tag ${k.tipe === 'asli' ? 't-asli' : 't-fiktif'}" style="margin-left:5px;">
               ${esc(String(k.tipe || '').toUpperCase())}
             </span>
+            ${k.batal ? '<span class="tag t-batal" style="margin-left:4px;">DIBATALKAN</span>'
+              : (k.status && k.status !== 'LUNAS' ? `<span class="tag t-piutang" style="margin-left:4px;">${esc(k.status)}</span>` : '')}
           </div>
           <div class="limeta">
-            ${k.tgl || '-'} · ${(k.items || []).length} item ·
-            ${fmt(k.total)} · oleh <strong>${esc(k.createdBy || '-')}</strong>
+            ${esc(k.tgl || '-')} · ${(k.items || []).length} item ·
+            ${fmt(k.total)}${sisa > 0 ? ` · <strong>sisa ${fmt(sisa)}</strong>` : ''} · oleh <strong>${esc(k.createdBy || '-')}</strong>
+            ${k.batal ? `<br>Batal: ${esc(k.batalAlasan || '-')} (oleh ${esc(k.batalOleh || '-')})` : ''}
+            ${k.diubahAt && !k.batal ? `<br>Diubah ${esc(fmtDT(k.diubahAt))} oleh ${esc(k.diubahOleh || '-')}` : ''}
           </div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
         <button class="btn btn-o btn-sm" onclick="lihatKwt(${k.id})">Lihat</button>
         <button class="btn btn-sm btn-pdf" onclick="exportPDFById(${k.id})">📄 PDF</button>
+        ${isOwner && !k.batal && sisa > 0 ? `<button class="btn btn-g btn-sm" onclick="tandaiLunas(${k.id})">✔ Lunas</button>` : ''}
+        ${isOwner && !k.batal ? `<button class="btn btn-o btn-sm" onclick="editKwt(${k.id})">✏️ Edit</button>` : ''}
+        ${isOwner && !k.batal ? `<button class="btn btn-orange" onclick="bukaBatal(${k.id})">Batalkan</button>` : ''}
+        ${isOwner && k.batal ? `<button class="btn btn-o btn-sm" onclick="pulihkanKwt(${k.id})">♻️ Pulihkan</button>` : ''}
         ${isOwner ? `<button class="btn btn-r" onclick="hapusKwt(${k.id})">✕</button>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function lihatKwt(id) {
@@ -2279,6 +2402,203 @@ async function hapusKwt(id) {
   } catch (e) {
     setSyncBadge('err', 'Gagal');
     showToast('Gagal Menghapus', e.message, '❌');
+  }
+}
+
+// ================================================================
+//  EDIT, BATAL (VOID), PULIHKAN, TANDAI LUNAS — khusus owner
+//  Setiap perubahan dicatat di Log Aktivitas.
+// ================================================================
+
+function hanyaOwner() {
+  if (!CU || CU.role !== 'owner') {
+    showToast('Akses Ditolak', 'Hanya owner yang dapat mengubah kuitansi.', '🔒');
+    return false;
+  }
+  return true;
+}
+
+const _LBL_UANG = { total: 1, diskon: 1, dibayar: 1 };
+const _LBL_FIELD = {
+  no: 'nomor', tgl: 'tanggal', status: 'status', pelanggan: 'pelanggan', alamatpl: 'alamat pelanggan',
+  catatan: 'catatan', diskon: 'diskon', total: 'total', tipe: 'jenis', dibayar: 'dibayar',
+  namapt: 'nama percetakan', kontakpt: 'kontak', alamatpt: 'alamat percetakan'
+};
+
+function ringkasPerubahan(lama, baru) {
+  const nilai = (f, v) => {
+    if (v == null || v === '') return '-';
+    if (_LBL_UANG[f]) return fmt(v);
+    const t = String(v);
+    return '"' + (t.length > 40 ? t.slice(0, 40) + '…' : t) + '"';
+  };
+  const out = [];
+  Object.keys(_LBL_FIELD).forEach(f => {
+    const a = lama[f] == null ? '' : lama[f];
+    const b = baru[f] == null ? '' : baru[f];
+    if (String(a) !== String(b)) out.push(`${_LBL_FIELD[f]}: ${nilai(f, lama[f])} → ${nilai(f, baru[f])}`);
+  });
+  const norm = (it) => JSON.stringify((it || []).map(x => ({ d: x.d || '', q: Number(x.q) || 0, h: Number(x.h) || 0 })));
+  if (norm(lama.items) !== norm(baru.items)) out.push('rincian item diubah');
+  return out;
+}
+
+function editKwt(id) {
+  if (!hanyaOwner()) return;
+  const k = _cache.kuitansi.find(x => x.id === id);
+  if (!k) return;
+  if (k.batal) { showToast('Tidak Bisa Diedit', 'Pulihkan kuitansi ini dulu sebelum mengedit.', '⚠️'); return; }
+
+  goPage('kuitansi');
+  _editId = id;
+  const set = (i, v) => { document.getElementById(i).value = v == null ? '' : v; };
+  set('q-tipe', k.tipe); set('q-namapt', k.namapt); set('q-kontakpt', k.kontakpt); set('q-alamatpt', k.alamatpt);
+  set('q-no', k.no); set('q-tgl', k.tgl); set('q-status', k.status);
+  set('q-pelanggan', k.pelanggan); set('q-alamatpl', k.alamatpl); set('q-catatan', k.catatan);
+  set('q-diskon', k.diskon || 0); set('q-dibayar', k.dibayar);
+  onTipeChange(); toggleDibayar();
+  rows = (k.items || []).map(it => ({ id: Date.now() + Math.random(), d: it.d || '', q: it.q, h: it.h }));
+  renderRows();
+  document.getElementById('rc-container').style.display = 'none';
+  document.getElementById('print-acts').style.display   = 'none';
+  setModeEdit(true, k.no);
+  window.scrollTo(0, 0);
+  const main = document.querySelector('.main'); if (main) main.scrollTop = 0;
+}
+
+function batalEdit() { resetKuitansi(); }
+
+async function simpanEdit(k) {
+  if (!hanyaOwner()) return;
+  const lama = _cache.kuitansi.find(x => x.id === _editId);
+  if (!lama) { showToast('Gagal', 'Kuitansi yang diedit tidak ditemukan (mungkin sudah dihapus).', '❌'); resetKuitansi(); return; }
+  if (_cache.kuitansi.some(x => x.id !== _editId && x.no === k.no)) {
+    showToast('Nomor Sudah Dipakai', `Nomor ${k.no} dipakai kuitansi lain. Ganti nomornya.`, '⚠️');
+    return;
+  }
+  const perubahan = ringkasPerubahan(lama, k);
+  if (!perubahan.length) { showToast('Tidak Ada Perubahan', 'Tidak ada yang berbeda dari data tersimpan.', 'ℹ️'); return; }
+
+  const btn = document.getElementById('btn-simpan-kwt');
+  btn.disabled = true; btn.textContent = '💾 Menyimpan...';
+  setSyncBadge('saving', 'Menyimpan...');
+  try {
+    const patch = {
+      tipe: k.tipe, namapt: k.namapt, kontakpt: k.kontakpt, alamatpt: k.alamatpt,
+      no: k.no, tgl: k.tgl, status: k.status, pelanggan: k.pelanggan, alamatpl: k.alamatpl,
+      catatan: k.catatan, items: k.items, diskon: k.diskon, total: k.total,
+      dibayar: k.status === 'DP' ? k.dibayar : null,
+      diubah_at: new Date().toISOString(), diubah_oleh: CU.name
+    };
+    const baru = await dbUpdateKwt(_editId, patch);
+    await addLog('kuitansi', 'edit', `mengubah kuitansi <strong>${lama.no}</strong> — ${perubahan.join('; ')}`);
+    setSyncBadge('ok', 'Tersimpan');
+    showToast('Perubahan Disimpan', `${baru.no} — ${perubahan.length} perubahan`, '✏️');
+    resetKuitansi();
+    _lastKwt = baru;
+    document.getElementById('rc-container').innerHTML = buildReceipt(baru, true);
+    document.getElementById('rc-container').style.display = 'block';
+    document.getElementById('print-acts').style.display   = 'flex';
+    updatePL();
+  } catch (e) {
+    setSyncBadge('err', 'Gagal');
+    showToast('Gagal Menyimpan Perubahan', pesanKolomBaru(e), '❌', 9000);
+  }
+  btn.disabled = false; btn.textContent = _editId ? '💾 Simpan Perubahan' : '💾 Simpan';
+}
+
+// ── Batalkan (void) ──
+let _batalId = null;
+
+function bukaBatal(id) {
+  if (!hanyaOwner()) return;
+  const k = _cache.kuitansi.find(x => x.id === id);
+  if (!k) return;
+  _batalId = id;
+  document.getElementById('batal-judul').textContent = 'Batalkan ' + k.no + ' — ' + k.pelanggan;
+  document.getElementById('batal-alasan').value = '';
+  document.getElementById('batal-err').style.display = 'none';
+  document.getElementById('modal-batal').style.display = 'flex';
+  setTimeout(() => document.getElementById('batal-alasan').focus(), 50);
+}
+
+function tutupBatal() {
+  _batalId = null;
+  document.getElementById('modal-batal').style.display = 'none';
+}
+
+async function konfirmasiBatal() {
+  if (!hanyaOwner()) return;
+  const k = _cache.kuitansi.find(x => x.id === _batalId);
+  if (!k) { tutupBatal(); return; }
+  const alasan = document.getElementById('batal-alasan').value.trim();
+  const err = document.getElementById('batal-err');
+  if (alasan.length < 3) {
+    err.textContent = 'Alasan pembatalan wajib diisi (minimal 3 huruf).';
+    err.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('btn-konfirmasi-batal');
+  btn.disabled = true;
+  setSyncBadge('saving', 'Membatalkan...');
+  try {
+    const now = new Date().toISOString();
+    await dbUpdateKwt(k.id, {
+      batal: true, batal_alasan: alasan, batal_oleh: CU.name, batal_at: now,
+      diubah_at: now, diubah_oleh: CU.name
+    });
+    await addLog('kuitansi', 'batal', `membatalkan kuitansi <strong>${k.no}</strong> — ${k.pelanggan} [${fmt(k.total)}]. Alasan: ${alasan}`);
+    setSyncBadge('ok', 'Dibatalkan');
+    tutupBatal();
+    showToast('Kuitansi Dibatalkan', `${k.no} tidak dihitung lagi sebagai pemasukan.`, '⛔');
+    renderRiwayat(); updatePL(); renderDashboard();
+  } catch (e) {
+    setSyncBadge('err', 'Gagal');
+    err.textContent = pesanKolomBaru(e);
+    err.style.display = 'block';
+  }
+  btn.disabled = false;
+}
+
+async function pulihkanKwt(id) {
+  if (!hanyaOwner()) return;
+  const k = _cache.kuitansi.find(x => x.id === id);
+  if (!k || !confirm(`Pulihkan kuitansi ${k.no} — ${k.pelanggan}? Kuitansi akan dihitung lagi sebagai pemasukan.`)) return;
+  setSyncBadge('saving', 'Memulihkan...');
+  try {
+    await dbUpdateKwt(id, {
+      batal: false, batal_alasan: null, batal_oleh: null, batal_at: null,
+      diubah_at: new Date().toISOString(), diubah_oleh: CU.name
+    });
+    await addLog('kuitansi', 'pulih', `memulihkan kuitansi <strong>${k.no}</strong> — ${k.pelanggan} [${fmt(k.total)}]`);
+    setSyncBadge('ok', 'Dipulihkan');
+    showToast('Kuitansi Dipulihkan', k.no, '♻️');
+    renderRiwayat(); updatePL(); renderDashboard();
+  } catch (e) {
+    setSyncBadge('err', 'Gagal');
+    showToast('Gagal Memulihkan', pesanKolomBaru(e), '❌', 9000);
+  }
+}
+
+async function tandaiLunas(id) {
+  if (!hanyaOwner()) return;
+  const k = _cache.kuitansi.find(x => x.id === id);
+  if (!k) return;
+  const sisa = sisaKwt(k);
+  if (!confirm(`Tandai ${k.no} — ${k.pelanggan} LUNAS? Sisa ${fmt(sisa)} dianggap sudah dibayar.`)) return;
+  setSyncBadge('saving', 'Menyimpan...');
+  try {
+    await dbUpdateKwt(id, {
+      status: 'LUNAS', dibayar: k.total,
+      diubah_at: new Date().toISOString(), diubah_oleh: CU.name
+    });
+    await addLog('kuitansi', 'lunas', `menandai kuitansi <strong>${k.no}</strong> — ${k.pelanggan} LUNAS (pelunasan ${fmt(sisa)})`);
+    setSyncBadge('ok', 'Tersimpan');
+    showToast('Kuitansi Lunas', `${k.no} — pelunasan ${fmt(sisa)}`, '✅');
+    renderRiwayat(); renderDashboard();
+  } catch (e) {
+    setSyncBadge('err', 'Gagal');
+    showToast('Gagal Menyimpan', pesanKolomBaru(e), '❌', 9000);
   }
 }
 
