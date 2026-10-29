@@ -49,6 +49,10 @@ Jalankan `sql/003_edit_batal_piutang.sql` di Supabase SQL Editor (aman dijalanka
 - Pemasukan tetap dihitung **saat kuitansi dibuat**; DP/sisa hanya pencatatan piutang.
 - Sebelum SQL 003 dijalankan, kuitansi biasa tetap bisa disimpan; fitur baru menampilkan petunjuk untuk menjalankan SQL 003.
 
+## Riwayat kuitansi
+
+Riwayat punya pencarian (nomor, pelanggan, alamat, catatan, status), filter tanggal dari–sampai, filter jenis (termasuk Piutang/Dibatalkan), dan halaman 20 data. Urutan: tanggal terbaru dulu.
+
 ## Keamanan
 
 - Peran (`admin` / `owner`) dibaca dari `app_metadata` di token login, bukan dari `user_metadata` (yang bisa diubah pengguna sendiri).

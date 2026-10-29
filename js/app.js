@@ -2328,18 +2328,59 @@ function renderDashboard() {
 //  RIWAYAT KUITANSI
 // ================================================================
 
+const RW_PER_HAL = 20;
+let _rwHal = 1;
+
+function rwFilterBerubah() { _rwHal = 1; renderRiwayat(); }
+function rwGanti(h) { _rwHal = h; renderRiwayat(); const el = document.getElementById('page-riwayat'); if (el && el.scrollIntoView) el.scrollIntoView(); }
+function rwReset() {
+  ['rw-cari', 'rw-dari', 'rw-sampai'].forEach(i => { document.getElementById(i).value = ''; });
+  document.getElementById('filter-tipe').value = 'semua';
+  rwFilterBerubah();
+}
+
 function renderRiwayat() {
   const f = document.getElementById('filter-tipe').value;
+  const q = (document.getElementById('rw-cari').value || '').trim().toLowerCase();
+  const dari = document.getElementById('rw-dari').value;
+  const sampai = document.getElementById('rw-sampai').value;
   let list = _cache.kuitansi;
   if (f === 'asli' || f === 'fiktif') list = list.filter(k => k.tipe === f);
   else if (f === 'batal')             list = list.filter(k => k.batal);
   else if (f === 'piutang')           list = list.filter(k => k.tipe === 'asli' && sisaKwt(k) > 0);
+  if (q) list = list.filter(k => [k.no, k.pelanggan, k.alamatpl, k.catatan, k.status]
+    .some(v => String(v || '').toLowerCase().includes(q)));
+  if (dari)   list = list.filter(k => k.tgl && k.tgl >= dari);
+  if (sampai) list = list.filter(k => k.tgl && k.tgl <= sampai);
+
+  // Terbaru dulu: tanggal lalu id
+  list = [...list].sort((x, y) => String(y.tgl || '').localeCompare(String(x.tgl || '')) || (y.id - x.id));
+
+  const total = list.length;
+  const jmlHal = Math.max(1, Math.ceil(total / RW_PER_HAL));
+  if (_rwHal > jmlHal) _rwHal = jmlHal;
+  if (_rwHal < 1) _rwHal = 1;
+  const awal = (_rwHal - 1) * RW_PER_HAL;
+  const tampil = list.slice(awal, awal + RW_PER_HAL);
+
+  const info = document.getElementById('rw-info');
+  const pager = document.getElementById('rw-pager');
+  const sedangFilter = f !== 'semua' || q || dari || sampai;
+  info.textContent = total
+    ? `Menampilkan ${awal + 1}–${awal + tampil.length} dari ${total} kuitansi${sedangFilter ? ' (terfilter)' : ''}`
+    : '';
+  pager.innerHTML = jmlHal > 1
+    ? `<button class="btn btn-o btn-sm" ${_rwHal <= 1 ? 'disabled' : ''} onclick="rwGanti(${_rwHal - 1})">‹ Sebelumnya</button>
+       <span>Halaman ${_rwHal} / ${jmlHal}</span>
+       <button class="btn btn-o btn-sm" ${_rwHal >= jmlHal ? 'disabled' : ''} onclick="rwGanti(${_rwHal + 1})">Berikutnya ›</button>`
+    : '';
+
   const el = document.getElementById('kwt-list');
   const isOwner = CU && CU.role === 'owner';
 
-  if (!list.length) { el.innerHTML = '<div class="empty">' + (f === 'piutang' ? 'Tidak ada piutang 🎉' : 'Belum ada kuitansi') + '</div>'; return; }
+  if (!total) { el.innerHTML = '<div class="empty">' + (f === 'piutang' && !q && !dari && !sampai ? 'Tidak ada piutang 🎉' : (sedangFilter ? 'Tidak ada kuitansi yang cocok dengan filter' : 'Belum ada kuitansi')) + '</div>'; return; }
 
-  el.innerHTML = [...list].reverse().map(k => {
+  el.innerHTML = tampil.map(k => {
     const sisa = sisaKwt(k);
     return `
     <div class="li-row ${k.batal ? 'kwt-batal' : ''}">

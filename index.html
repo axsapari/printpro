@@ -411,11 +411,19 @@
       <div id="page-riwayat" class="page">
         <div class="card">
           <div class="chdr">Semua Kuitansi
-            <select id="filter-tipe" onchange="renderRiwayat()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
+            <select id="filter-tipe" onchange="rwFilterBerubah()" style="font-size:12px;padding:5px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);">
               <option value="semua">Semua</option><option value="asli">Asli</option><option value="fiktif">Fiktif</option><option value="piutang">Piutang</option><option value="batal">Dibatalkan</option>
             </select>
           </div>
+          <div class="rw-filter">
+            <input type="search" id="rw-cari" placeholder="Cari nomor, pelanggan, alamat, catatan…" oninput="rwFilterBerubah()" autocomplete="off">
+            <label>Dari <input type="date" id="rw-dari" onchange="rwFilterBerubah()"></label>
+            <label>Sampai <input type="date" id="rw-sampai" onchange="rwFilterBerubah()"></label>
+            <button class="btn btn-o btn-sm" onclick="rwReset()">Reset</button>
+          </div>
+          <div id="rw-info" class="rw-info"></div>
           <div id="kwt-list"><div class="empty">Memuat...</div></div>
+          <div id="rw-pager" class="rw-pager"></div>
         </div>
       </div>
 

@@ -538,3 +538,12 @@ html.light .theme-icon.sun{opacity:1;}
   .rc-two-col{grid-template-columns:1fr;}
   .sync-badge{display:none;}
 }
+
+/* Riwayat: pencarian, filter tanggal, paginasi */
+.rw-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px;}
+.rw-filter input{font-size:12px;padding:6px 10px;border:1px solid var(--brd2);border-radius:var(--rsm);font-family:var(--sans);background:var(--surf2);color:var(--ink);}
+.rw-filter input[type=search]{flex:1 1 220px;min-width:0;}
+.rw-filter label{font-size:11px;color:var(--ink2,inherit);display:flex;align-items:center;gap:5px;}
+.rw-info{font-size:11px;opacity:.75;margin:0 0 8px;}
+.rw-pager{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;font-size:12px;}
+.rw-pager:empty{display:none;}
