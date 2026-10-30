@@ -57,6 +57,10 @@ Riwayat punya pencarian (nomor, pelanggan, alamat, catatan, status), filter tang
 
 Tombol **Tema** di sidebar membuka pilihan 7 tema: Gelap (bawaan), Terang, Samudra, Hutan, Senja, Kopi, dan Langit. Pilihan tersimpan per perangkat. Struk dan PDF kuitansi selalu putih agar siap cetak. Tema baru cukup ditambah di `TEMA` (`js/app.js`) dan blok `html[data-tema="..."]` di `css/style.css`, serta daftar tema terang di skrip kecil pada `<head>` `index.html`.
 
+## Catatan pembaruan (cache browser)
+
+Setiap kali `css/` atau `js/` berubah, angka `?v=` pada tag `<link>`/`<script>` di `index.html` ikut dinaikkan agar browser memuat file terbaru. Jika tampilan tidak berubah setelah pembaruan, tekan Ctrl+Shift+R (atau di HP: hapus data situs).
+
 ## Keamanan
 
 - Peran (`admin` / `owner`) dibaca dari `app_metadata` di token login, bukan dari `user_metadata` (yang bisa diubah pengguna sendiri).
