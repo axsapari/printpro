@@ -9,7 +9,7 @@ index.html          kerangka halaman
 css/style.css       tampilan
 js/config.js        daftar akun (tanpa password) + skema SQL untuk setup wizard
 js/app.js           seluruh logika aplikasi
-sql/                migrasi database untuk Supabase SQL Editor (001 peran, 002 keep-alive, 003 edit/batal/piutang)
+sql/                migrasi database untuk Supabase SQL Editor (001 peran, 002 keep-alive, 003 edit/batal/piutang, 004 nomor kuitansi unik)
 scripts/keepalive.mjs   ping terjadwal agar Supabase tidak ter-pause
 .github/workflows/      jadwal GitHub Actions untuk keep-alive
 ```
@@ -48,6 +48,23 @@ Jalankan `sql/003_edit_batal_piutang.sql` di Supabase SQL Editor (aman dijalanka
 - **DP & piutang**: status DP meminta jumlah dibayar; struk/PDF menampilkan Dibayar dan Sisa. Dashboard menampilkan *Piutang Belum Lunas*, Riwayat punya filter Piutang/Dibatalkan, dan tombol ✔ Lunas menandai pelunasan.
 - Pemasukan tetap dihitung **saat kuitansi dibuat**; DP/sisa hanya pencatatan piutang.
 - Sebelum SQL 003 dijalankan, kuitansi biasa tetap bisa disimpan; fitur baru menampilkan petunjuk untuk menjalankan SQL 003.
+
+## Nomor kuitansi unik (SQL 004)
+
+Sebelumnya kolom `no` tidak dijaga unik, sehingga dua perangkat yang menyimpan pada saat hampir bersamaan bisa menghasilkan nomor kembar — dan keduanya tersimpan tanpa peringatan.
+
+Jalankan `sql/004_nomor_kuitansi_unik.sql` di Supabase SQL Editor (aman dijalankan ulang). Skrip itu:
+
+- menggeser nomor kembar yang sudah ada menjadi `<nomor>-2`, `<nomor>-3`, … (yang **terlama** mempertahankan nomornya). Daftar perubahannya tersimpan di tabel `pm_nomor_audit` dan juga tampil sebagai *Diubah oleh migrasi 004* di Riwayat;
+- membuat unique index `pm_kuitansi_no_uniq` pada `upper(btrim(no))`, sehingga nomor kosong tidak ikut terbentur dan beda huruf besar/kecil dianggap sama.
+
+Sesudah itu aplikasi:
+
+- memeriksa nomor sebelum menyimpan; bila sudah dipakai, nomor digeser otomatis dan diberi tahu lewat toast;
+- bila database tetap menolak (kode `23505`) karena perangkat lain menyimpan lebih dulu, data disegarkan, nomor digeser, lalu penyimpanan diulang **sekali** tanpa perlu input ulang;
+- menolak nomor kosong dan nomor kembar saat **edit** kuitansi.
+
+Catatan: karena restore backup memakai `ignoreDuplicates`, baris dari file backup yang nomornya sudah ada di database akan **dilewati** (tidak diganti). Itu disengaja agar nomor yang sudah dicetak tidak berubah.
 
 ## Riwayat kuitansi
 

@@ -1475,21 +1475,52 @@ function onTipeChange() {
   document.getElementById('fiktif-note').style.display = isFiktif ? 'block' : 'none';
 }
 
-function autoNo() {
-  const now = new Date();
-  const mm  = String(now.getMonth() + 1).padStart(2, '0');
-  const re  = new RegExp('^KWT-' + mm + '-(\\d+)$');
-  // Nomor tertinggi bulan ini + 1 (tidak bentrok walau ada kuitansi yang dihapus)
+// Nomor kuitansi WAJIB unik. Penjaga sebenarnya ada di database
+// (unique index pm_kuitansi_no_uniq — lihat sql/004_nomor_kuitansi_unik.sql);
+// fungsi di bawah mencegah bentrok terjadi sebelum data sempat dikirim.
+// Perbandingan mengabaikan spasi tepi dan besar/kecil huruf agar "kwt-11-001"
+// dianggap sama dengan "KWT-11-001".
+function normNo(s) {
+  return String(s == null ? '' : s).trim();
+}
+
+function nomorDipakai(no, kecualiId) {
+  const n = normNo(no).toUpperCase();
+  if (!n) return false;
+  return _cache.kuitansi.some(k => k.id !== kecualiId && normNo(k.no).toUpperCase() === n);
+}
+
+// True bila error 23505 berasal dari unique index nomor kuitansi, BUKAN dari
+// primary key (dua perangkat menyimpan pada milidetik yang sama). Keduanya
+// memakai kode 23505, jadi namanya perlu dibedakan.
+function bentrokNomor(e) {
+  if (!e || e.code !== '23505') return false;
+  const m = String(e.message || '') + ' ' + String(e.details || '');
+  if (/pm_kuitansi_no_uniq/i.test(m)) return true;
+  if (/pkey|primary key/i.test(m)) return false;
+  return true; // 23505 tanpa nama constraint: anggap bentrok nomor
+}
+
+// Nomor otomatis berikutnya: KWT-<bulan>-<urut 3 digit>.
+// Dihitung dari nomor terbesar berawalan sama di SELURUH cache (bukan hanya
+// yang tanggalnya bulan ini), lalu digeser sampai menemukan nomor yang bebas.
+function nomorOtomatisBebas() {
+  const now    = new Date();
+  const prefix = 'KWT-' + String(now.getMonth() + 1).padStart(2, '0') + '-';
+  const re     = new RegExp('^' + prefix.replace(/-/g, '\\-') + '(\\d+)$');
   let maxN = 0;
   _cache.kuitansi.forEach(k => {
-    if (!k.tgl) return;
-    const d = new Date(k.tgl + 'T00:00:00');
-    if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return;
-    const m = re.exec(k.no || '');
+    const m = re.exec(normNo(k.no).toUpperCase());
     if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
   });
+  let urut = maxN + 1;
+  while (urut < 10000 && nomorDipakai(prefix + String(urut).padStart(3, '0'))) urut++;
+  return prefix + String(urut).padStart(3, '0');
+}
+
+function autoNo() {
   const el = document.getElementById('q-no');
-  if (el) el.value = 'KWT-' + mm + '-' + String(maxN + 1).padStart(3, '0');
+  if (el) el.value = nomorOtomatisBebas();
 }
 
 let _editId = null;   // id kuitansi yang sedang diedit (null = mode buat baru)
@@ -1670,19 +1701,24 @@ async function simpanKuitansi() {
   }
   if (_editId) return simpanEdit(k);
 
+  // Nomor kosong atau sudah dipakai → rapikan sebelum dikirim.
+  // Cache bisa tertinggal bila perangkat lain baru saja menyimpan.
+  if (!normNo(k.no)) {
+    k.no = nomorOtomatisBebas();
+    document.getElementById('q-no').value = k.no;
+  } else if (nomorDipakai(k.no)) {
+    const lama = normNo(k.no);
+    k.no = nomorOtomatisBebas();
+    document.getElementById('q-no').value = k.no;
+    showToast('Nomor Disesuaikan', `Nomor ${lama} sudah dipakai. Dipakai ${k.no}.`, '⚠️', 6000);
+  }
+
   const btn = document.getElementById('btn-simpan-kwt');
   btn.disabled = true; btn.textContent = '💾 Menyimpan...';
   setSyncBadge('saving', 'Menyimpan...');
 
   try {
-    const entry = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      createdBy: CU.name,
-      userId: CU.uid,
-      ...k
-    };
-    await dbInsertKwt(entry);
+    const entry = await simpanKuitansiBaru(k);
     await addLog('kuitansi', 'masuk',
       `membuat kuitansi <strong>${k.no}</strong> untuk <strong>${k.pelanggan}</strong> — ${fmt(k.total)} [${k.tipe.toUpperCase()}]`);
 
@@ -1694,17 +1730,49 @@ async function simpanKuitansi() {
     autoNo();
   } catch (e) {
     setSyncBadge('err', 'Gagal');
-    if (e && e.code === '23505') {
-      // Nomor bentrok (mis. dua device menyimpan bersamaan): muat ulang & beri nomor baru
-      await dbLoad();
-      autoNo();
-      showToast('Nomor Kuitansi Bentrok', 'Nomor sudah dipakai. Nomor baru sudah diisi — klik Simpan lagi.', '⚠️', 7000);
+    if (bentrokNomor(e)) {
+      // Dua percobaan otomatis sudah habis (mis. tiga perangkat menyimpan
+      // serentak). Siapkan nomor baru agar klik berikutnya pasti berhasil.
+      try { await dbLoad(); } catch (_) {}
+      k.no = nomorOtomatisBebas();
+      document.getElementById('q-no').value = k.no;
+      showToast('Nomor Kuitansi Bentrok', `Nomor sudah dipakai perangkat lain. Nomor baru sudah diisi: ${k.no}. Klik Simpan sekali lagi.`, '⚠️', 9000);
     } else {
       showToast('Gagal Menyimpan', pesanKolomBaru(e), '❌', 9000);
     }
   }
 
   btn.disabled = false; btn.textContent = '💾 Simpan';
+}
+
+// Simpan kuitansi baru dengan penjagaan nomor unik.
+// Bila database menolak karena nomor bentrok (kode 23505 dari unique index),
+// data terbaru diambil ulang, nomor digeser, lalu dicoba sekali lagi —
+// pengguna tidak perlu mengulang input dari awal.
+async function simpanKuitansiBaru(k) {
+  for (let coba = 1; coba <= 2; coba++) {
+    const entry = {
+      id: Date.now() + (coba - 1),
+      timestamp: new Date().toISOString(),
+      createdBy: CU.name,
+      userId: CU.uid,
+      ...k
+    };
+    try {
+      await dbInsertKwt(entry);
+      return entry;
+    } catch (e) {
+      if (coba === 1 && bentrokNomor(e)) {
+        await dbLoad();                    // sinkronkan nomor yang sudah terpakai
+        k.no = nomorOtomatisBebas();       // nomor berikutnya yang masih bebas
+        const el = document.getElementById('q-no');
+        if (el) el.value = k.no;
+        showToast('Nomor Bentrok', `Nomor sudah dipakai perangkat lain. Dicoba lagi dengan ${k.no}.`, '⚠️', 6000);
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 // ================================================================
@@ -2551,7 +2619,11 @@ async function simpanEdit(k) {
   if (!hanyaOwner()) return;
   const lama = _cache.kuitansi.find(x => x.id === _editId);
   if (!lama) { showToast('Gagal', 'Kuitansi yang diedit tidak ditemukan (mungkin sudah dihapus).', '❌'); resetKuitansi(); return; }
-  if (_cache.kuitansi.some(x => x.id !== _editId && x.no === k.no)) {
+  if (!normNo(k.no)) {
+    showToast('Nomor Kosong', 'Nomor kuitansi tidak boleh kosong.', '⚠️');
+    return;
+  }
+  if (nomorDipakai(k.no, _editId)) {
     showToast('Nomor Sudah Dipakai', `Nomor ${k.no} dipakai kuitansi lain. Ganti nomornya.`, '⚠️');
     return;
   }
@@ -2581,7 +2653,11 @@ async function simpanEdit(k) {
     updatePL();
   } catch (e) {
     setSyncBadge('err', 'Gagal');
-    showToast('Gagal Menyimpan Perubahan', pesanKolomBaru(e), '❌', 9000);
+    if (bentrokNomor(e)) {
+      showToast('Nomor Sudah Dipakai', `Nomor ${k.no} baru saja dipakai perangkat lain. Pilih nomor lain.`, '⚠️', 9000);
+    } else {
+      showToast('Gagal Menyimpan Perubahan', pesanKolomBaru(e), '❌', 9000);
+    }
   }
   btn.disabled = false; btn.textContent = _editId ? '💾 Simpan Perubahan' : '💾 Simpan';
 }

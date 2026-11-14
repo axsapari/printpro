@@ -137,6 +137,14 @@ create policy "lo_sel" on pm_logs for select to authenticated using (get_user_ro
 create policy "tm_sel" on pm_item_templates for select to authenticated using (get_user_role() in ('admin','owner'));
 create policy "tm_own" on pm_item_templates for all to authenticated using (get_user_role() = 'owner') with check (get_user_role() = 'owner');
 
+-- Nomor kuitansi unik: mencegah dua perangkat menyimpan nomor yang sama.
+-- Aplikasi menangani error 23505 dari index ini dengan menggeser nomor
+-- lalu menyimpan ulang secara otomatis (lihat simpanKuitansiBaru di js/app.js).
+-- Database lama: jalankan sql/004_nomor_kuitansi_unik.sql.
+create unique index if not exists pm_kuitansi_no_uniq
+  on pm_kuitansi (upper(btrim(no)))
+  where no is not null and btrim(no) <> '';
+
 -- 3. AKTIFKAN REALTIME
 alter publication supabase_realtime add table pm_kuitansi;
 alter publication supabase_realtime add table pm_modal;
