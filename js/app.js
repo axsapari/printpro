@@ -930,6 +930,7 @@ function applyUserUI(u) {
   startActivityTracking();
 
   autoNo();
+  identSum();
 }
 
 // Pesan login yang spesifik (bukan satu pesan umum untuk semua error)
@@ -1049,6 +1050,30 @@ async function doLogout() {
 // ================================================================
 let _sidebarCollapsed = localStorage.getItem('pm_sidebar_col') === '1';
 
+// Menu geser untuk layar kecil
+function toggleNav() { document.body.classList.contains('nav-open') ? closeNav() : openNav(); }
+function openNav() {
+  document.body.classList.add('nav-open');
+  const b = document.getElementById('menu-btn'); if (b) b.setAttribute('aria-expanded', 'true');
+}
+function closeNav() {
+  document.body.classList.remove('nav-open');
+  const b = document.getElementById('menu-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeNav(); tutupAmenu(); } });
+window.addEventListener('resize', () => { if (window.innerWidth > 768) closeNav(); tutupAmenu(); });
+document.addEventListener('scroll', () => tutupAmenu(), true);
+
+// Kartu piutang di dashboard -> daftar piutang di Riwayat
+function bukaPiutang() {
+  goPage('riwayat');
+  const f = document.getElementById('filter-tipe');
+  if (f) { f.value = 'piutang'; rwFilterBerubah(); }
+}
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('stat-link')) { e.preventDefault(); bukaPiutang(); }
+});
+
 function toggleSidebar() {
   _sidebarCollapsed = !_sidebarCollapsed;
   localStorage.setItem('pm_sidebar_col', _sidebarCollapsed ? '1' : '0');
@@ -1165,11 +1190,9 @@ function goPage(id) {
   if (id === 'template')   renderTemplates();
   if (id === 'backup')     { renderBackupInfo(); renderSbConnStatus(); }
 
-  // Di mobile: tutup sidebar otomatis
-  if (window.innerWidth < 768 && !_sidebarCollapsed) {
-    _sidebarCollapsed = true;
-    applysidebar();
-  }
+  // Di HP: tutup menu geser setelah memilih halaman
+  closeNav();
+  const mainEl = document.querySelector('.main'); if (mainEl) mainEl.scrollTop = 0;
 }
 
 // ================================================================
@@ -1409,6 +1432,20 @@ function addRow(d, q, h) {
   renderRows();
 }
 
+// Tekan Enter di kolom harga item terakhir -> tambah baris baru dan fokus ke deskripsinya
+function rowEnter(e, i) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  if (i === rows.length - 1) {
+    addRow();
+    const el = document.getElementById('row-desc-' + (rows.length - 1));
+    if (el) el.focus();
+  } else {
+    const el = document.getElementById('row-desc-' + (i + 1));
+    if (el) el.focus();
+  }
+}
+
 function removeRow(rid) {
   rows = rows.filter(r => r.id !== rid);
   renderRows();
@@ -1431,19 +1468,20 @@ function renderRows() {
           oninput="rows[${i}].d = this.value"
           placeholder="Ketik nama item...">
       </td>
-      <td class="td-qty">
-        <input type="number" value="${r.q}"
+      <td class="td-qty" data-label="Qty">
+        <input type="number" inputmode="decimal" value="${r.q}"
           oninput="rows[${i}].q = this.value; recalc()"
-          style="text-align:right;" placeholder="0">
+          style="text-align:right;" placeholder="0" aria-label="Qty item ${i + 1}">
       </td>
-      <td class="td-hp">
-        <input type="number" value="${r.h}"
+      <td class="td-hp" data-label="Harga satuan">
+        <input type="number" inputmode="decimal" value="${r.h}"
           oninput="rows[${i}].h = this.value; recalc()"
-          style="text-align:right;" placeholder="0">
+          onkeydown="rowEnter(event, ${i})"
+          style="text-align:right;" placeholder="0" aria-label="Harga satuan item ${i + 1}">
       </td>
-      <td class="td-sub" id="sub-${i}">Rp 0</td>
+      <td class="td-sub" id="sub-${i}" data-label="Subtotal">Rp 0</td>
       <td class="td-del">
-        <button class="del-btn" onclick="removeRow(${r.id})">×</button>
+        <button class="del-btn" onclick="removeRow(${r.id})" aria-label="Hapus item ${i + 1}">×</button>
       </td>
     </tr>`).join('');
 
@@ -1467,12 +1505,52 @@ function recalc() {
   const dis = parseFloat(document.getElementById('q-diskon').value) || 0;
   const net = Math.max(0, tot - dis);
   document.getElementById('q-total').textContent = fmt(net);
+  const bt = document.getElementById('bar-total'); if (bt) bt.textContent = fmt(net);
   return { tot, dis, net };
 }
 
 function onTipeChange() {
   const isFiktif = document.getElementById('q-tipe').value === 'fiktif';
   document.getElementById('fiktif-note').style.display = isFiktif ? 'block' : 'none';
+  identSum();
+}
+
+// Identitas percetakan jarang berubah: tampil ringkas, dibuka lewat tombol "Ubah"
+function identSum() {
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const el = document.getElementById('ident-sum');
+  if (!el) return;
+  el.innerHTML = '<strong>' + esc(v('q-namapt') || '—') + '</strong>' +
+    (v('q-kontakpt') ? ' · ' + esc(v('q-kontakpt')) : '') +
+    (v('q-alamatpt') ? '<br><span>' + esc(v('q-alamatpt')) + '</span>' : '');
+}
+
+function toggleIdentitas(force) {
+  const f = document.getElementById('ident-form');
+  const open = force === undefined ? f.style.display === 'none' : force;
+  f.style.display = open ? '' : 'none';
+  document.getElementById('ident-sum').style.display = open ? 'none' : '';
+  const b = document.getElementById('btn-ident');
+  b.textContent = open ? 'Selesai' : 'Ubah';
+  b.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+// Tombol Reset: tanya dulu bila sudah ada isian, supaya tidak hilang tak sengaja
+function tanyaReset() {
+  const kotor = rows.length > 0 || (document.getElementById('q-pelanggan').value || '').trim() || _editId;
+  if (kotor && !confirm(_editId ? 'Batalkan edit dan kosongkan formulir?' : 'Kosongkan semua isian formulir?')) return;
+  resetKuitansi();
+}
+
+// Tandai kolom yang bermasalah: garis merah, fokus, hilang sendiri saat diketik
+function tandaiInvalid(id, pesan) {
+  const el = document.getElementById(id);
+  if (!el) { showToast('Validasi', pesan, '⚠️'); return; }
+  el.classList.add('invalid');
+  el.addEventListener('input', () => el.classList.remove('invalid'), { once: true });
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); }
+  showToast('Lengkapi Data', pesan, '⚠️');
 }
 
 function autoNo() {
@@ -1525,6 +1603,7 @@ function resetKuitansi() {
   document.getElementById('q-tipe').value      = 'asli';
   onTipeChange();
   toggleDibayar();
+  toggleIdentitas(false);
   document.getElementById('rc-container').style.display  = 'none';
   document.getElementById('print-acts').style.display    = 'none';
   _lastKwt = null;
@@ -1655,19 +1734,21 @@ function previewKuitansi() {
 
 async function simpanKuitansi() {
   const k = getFormData();
-  if (!k.pelanggan || !k.items.length || k.total === 0) {
-    showToast('Validasi', 'Lengkapi nama pelanggan, item, dan harga.', '⚠️');
+  if (!k.pelanggan.trim())  return tandaiInvalid('q-pelanggan', 'Nama pelanggan belum diisi.');
+  if (!k.items.length) {
+    const b = document.querySelector('.add-row');
+    if (b) b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showToast('Lengkapi Data', 'Belum ada item. Klik "+ Tambah Item".', '⚠️');
     return;
   }
-
-  if (k.status === 'DP' && !(k.dibayar > 0)) {
-    showToast('Validasi', 'Status DP: isi jumlah yang sudah dibayar (DP).', '⚠️');
+  const kosong = rows.findIndex(r => !(parseFloat(r.q) > 0) || !(parseFloat(r.h) >= 0) || r.h === '');
+  if (kosong >= 0 && k.total === 0) return tandaiInvalid('row-desc-' + kosong, 'Isi qty dan harga item ' + (kosong + 1) + '.');
+  if (k.total === 0) {
+    showToast('Lengkapi Data', 'Total masih Rp 0. Periksa qty, harga, dan diskon.', '⚠️');
     return;
   }
-  if (k.status === 'DP' && k.dibayar > k.total) {
-    showToast('Validasi', 'Jumlah DP tidak boleh melebihi total.', '⚠️');
-    return;
-  }
+  if (k.status === 'DP' && !(k.dibayar > 0)) return tandaiInvalid('q-dibayar', 'Status DP: isi jumlah yang sudah dibayar (DP).');
+  if (k.status === 'DP' && k.dibayar > k.total) return tandaiInvalid('q-dibayar', 'Jumlah DP tidak boleh melebihi total.');
   if (_editId) return simpanEdit(k);
 
   const btn = document.getElementById('btn-simpan-kwt');
@@ -2371,6 +2452,33 @@ let _rwHal = 1;
 
 function rwFilterBerubah() { _rwHal = 1; renderRiwayat(); }
 function rwGanti(h) { _rwHal = h; renderRiwayat(); const el = document.getElementById('page-riwayat'); if (el && el.scrollIntoView) el.scrollIntoView(); }
+// Menu aksi "⋯" pada baris Riwayat
+function tutupAmenu() {
+  document.querySelectorAll('.amenu.open').forEach(m => {
+    m.classList.remove('open');
+    const b = m.querySelector('.amenu-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+  });
+}
+function toggleAmenu(ev) {
+  ev.stopPropagation();
+  const btn = ev.currentTarget;
+  const m = btn.closest('.amenu');
+  const buka = !m.classList.contains('open');
+  tutupAmenu();
+  if (!buka) return;
+  m.classList.add('open');
+  btn.setAttribute('aria-expanded', 'true');
+  // Posisi tetap di layar (tidak terpotong), rata kanan tombol, ke atas bila di bawah tak muat
+  const list = m.querySelector('.amenu-list');
+  const r = btn.getBoundingClientRect();
+  const w = list.offsetWidth, h = list.offsetHeight;
+  const left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
+  const top = (r.bottom + h + 12 > window.innerHeight) ? Math.max(8, r.top - h - 4) : r.bottom + 4;
+  list.style.left = left + 'px';
+  list.style.top = top + 'px';
+}
+document.addEventListener('click', e => { if (!e.target.closest('.amenu')) tutupAmenu(); });
+
 function rwReset() {
   ['rw-cari', 'rw-dari', 'rw-sampai'].forEach(i => { document.getElementById(i).value = ''; });
   document.getElementById('filter-tipe').value = 'semua';
@@ -2416,39 +2524,44 @@ function renderRiwayat() {
   const el = document.getElementById('kwt-list');
   const isOwner = CU && CU.role === 'owner';
 
-  if (!total) { el.innerHTML = '<div class="empty">' + (f === 'piutang' && !q && !dari && !sampai ? 'Tidak ada piutang 🎉' : (sedangFilter ? 'Tidak ada kuitansi yang cocok dengan filter' : 'Belum ada kuitansi')) + '</div>'; return; }
+  if (!total) { el.innerHTML = '<div class="empty">' + (f === 'piutang' && !q && !dari && !sampai ? 'Tidak ada piutang 🎉' : (sedangFilter ? 'Tidak ada kuitansi yang cocok dengan filter' : 'Belum ada kuitansi. <br><br><button class="btn btn-b btn-sm" onclick="goPage(\'kuitansi\')">＋ Buat kuitansi pertama</button>')) + '</div>'; return; }
 
   el.innerHTML = tampil.map(k => {
     const sisa = sisaKwt(k);
+    const menu = [];
+    if (isOwner && !k.batal) menu.push(`<button class="amenu-item" onclick="editKwt(${k.id})">✏️ Edit kuitansi</button>`);
+    if (isOwner && !k.batal) menu.push(`<button class="amenu-item" onclick="bukaBatal(${k.id})">⛔ Batalkan…</button>`);
+    if (isOwner && k.batal)  menu.push(`<button class="amenu-item" onclick="pulihkanKwt(${k.id})">♻️ Pulihkan</button>`);
+    if (isOwner)             menu.push(`<button class="amenu-item danger" onclick="hapusKwt(${k.id})">🗑 Hapus permanen…</button>`);
     return `
-    <div class="li-row ${k.batal ? 'kwt-batal' : ''}">
+    <div class="li-row kw-row ${k.batal ? 'kwt-batal' : ''}">
       <div class="li-l">
         <div class="ico ico-g">🧾</div>
-        <div>
-          <div class="liname">
+        <div class="kw-main">
+          <div class="liname kw-name">
             ${esc(k.no)} — ${esc(k.pelanggan)}
-            <span class="tag ${k.tipe === 'asli' ? 't-asli' : 't-fiktif'}" style="margin-left:5px;">
-              ${esc(String(k.tipe || '').toUpperCase())}
-            </span>
-            ${k.batal ? '<span class="tag t-batal" style="margin-left:4px;">DIBATALKAN</span>'
-              : (k.status && k.status !== 'LUNAS' ? `<span class="tag t-piutang" style="margin-left:4px;">${esc(k.status)}</span>` : '')}
+          </div>
+          <div class="kw-tags">
+            <span class="tag ${k.tipe === 'asli' ? 't-asli' : 't-fiktif'}">${esc(String(k.tipe || '').toUpperCase())}</span>
+            ${k.batal ? '<span class="tag t-batal">DIBATALKAN</span>'
+              : (k.status && k.status !== 'LUNAS' ? `<span class="tag t-piutang">${esc(k.status)}</span>` : '')}
           </div>
           <div class="limeta">
             ${esc(k.tgl || '-')} · ${(k.items || []).length} item ·
-            ${fmt(k.total)}${sisa > 0 ? ` · <strong>sisa ${fmt(sisa)}</strong>` : ''} · oleh <strong>${esc(k.createdBy || '-')}</strong>
+            <strong>${fmt(k.total)}</strong>${sisa > 0 ? ` · <strong class="kw-sisa">sisa ${fmt(sisa)}</strong>` : ''} · oleh ${esc(k.createdBy || '-')}
             ${k.batal ? `<br>Batal: ${esc(k.batalAlasan || '-')} (oleh ${esc(k.batalOleh || '-')})` : ''}
             ${k.diubahAt && !k.batal ? `<br>Diubah ${esc(fmtDT(k.diubahAt))} oleh ${esc(k.diubahOleh || '-')}` : ''}
           </div>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;">
+      <div class="kw-acts">
         <button class="btn btn-o btn-sm" onclick="lihatKwt(${k.id})">Lihat</button>
         <button class="btn btn-sm btn-pdf" onclick="exportPDFById(${k.id})">📄 PDF</button>
         ${isOwner && !k.batal && sisa > 0 ? `<button class="btn btn-g btn-sm" onclick="tandaiLunas(${k.id})">✔ Lunas</button>` : ''}
-        ${isOwner && !k.batal ? `<button class="btn btn-o btn-sm" onclick="editKwt(${k.id})">✏️ Edit</button>` : ''}
-        ${isOwner && !k.batal ? `<button class="btn btn-orange" onclick="bukaBatal(${k.id})">Batalkan</button>` : ''}
-        ${isOwner && k.batal ? `<button class="btn btn-o btn-sm" onclick="pulihkanKwt(${k.id})">♻️ Pulihkan</button>` : ''}
-        ${isOwner ? `<button class="btn btn-r" onclick="hapusKwt(${k.id})">✕</button>` : ''}
+        ${menu.length ? `<div class="amenu">
+          <button class="btn btn-o btn-sm amenu-btn" onclick="toggleAmenu(event)" aria-haspopup="true" aria-expanded="false" aria-label="Aksi lainnya untuk ${esc(k.no)}">⋯</button>
+          <div class="amenu-list" role="menu">${menu.join('')}</div>
+        </div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -2535,7 +2648,7 @@ function editKwt(id) {
   set('q-no', k.no); set('q-tgl', k.tgl); set('q-status', k.status);
   set('q-pelanggan', k.pelanggan); set('q-alamatpl', k.alamatpl); set('q-catatan', k.catatan);
   set('q-diskon', k.diskon || 0); set('q-dibayar', k.dibayar);
-  onTipeChange(); toggleDibayar();
+  onTipeChange(); toggleDibayar(); toggleIdentitas(false);
   rows = (k.items || []).map(it => ({ id: Date.now() + Math.random(), d: it.d || '', q: it.q, h: it.h }));
   renderRows();
   document.getElementById('rc-container').style.display = 'none';

@@ -15,7 +15,7 @@ try {
   if (_terang[_t]) _r.classList.add('light');
 } catch (e) {}
 </script>
-<link rel="stylesheet" href="css/style.css?v=20261030a">
+<link rel="stylesheet" href="css/style.css?v=20261121a">
 </head>
 <body>
 
@@ -162,6 +162,7 @@ try {
 <div class="app" id="app">
 
   <!-- ── SIDEBAR ── -->
+  <div class="nav-scrim no-print" id="nav-scrim" onclick="closeNav()"></div>
   <div class="sidebar no-print" id="sidebar">
     <!-- Brand -->
     <div class="sb-brand">
@@ -218,13 +219,13 @@ try {
       </div>
       <div class="sb-actions">
         <button class="sb-action-btn" onclick="bukaTema()" title="Pilih tema">
-          <span id="theme-ico">🌙</span><span>Tema</span>
+          <span id="theme-ico">🌙</span><span class="sb-ab-lbl">Tema</span>
         </button>
         <button class="sb-action-btn" onclick="toggleNotif()" title="Notifikasi">
-          <span>🔔</span><span id="notif-lbl">Notif</span>
+          <span>🔔</span><span class="sb-ab-lbl" id="notif-lbl">Notif</span>
         </button>
         <button class="sb-action-btn logout" onclick="doLogout()" title="Keluar">
-          <span>🚪</span><span>Keluar</span>
+          <span>🚪</span><span class="sb-ab-lbl">Keluar</span>
         </button>
       </div>
     </div>
@@ -234,6 +235,7 @@ try {
   <div class="content-area" id="content-area">
     <!-- Topbar tipis -->
     <div class="topbar no-print">
+      <button class="icon-btn menu-btn" onclick="toggleNav()" aria-label="Buka menu" aria-expanded="false" id="menu-btn">☰</button>
       <h2 id="page-title">Dashboard</h2>
       <div class="topbar-right">
         <div class="sync-badge sync-idle" id="sync-badge">☁️ Supabase</div>
@@ -254,12 +256,16 @@ try {
 
       <!-- DASHBOARD -->
       <div id="page-dashboard" class="page on">
+        <div class="quick no-print">
+          <button class="btn btn-b" onclick="goPage('kuitansi')">＋ Buat Kuitansi</button>
+          <button class="btn btn-o" onclick="bukaPiutang()">Lihat Piutang</button>
+        </div>
         <div class="stats">
           <div class="stat-card"><div class="slbl">Total Pemasukan</div><div class="sval sv-g" id="s-masuk">Rp 0</div></div>
           <div class="stat-card"><div class="slbl">Total Pengeluaran</div><div class="sval sv-r" id="s-keluar">Rp 0</div></div>
           <div class="stat-card"><div class="slbl">Saldo Bersih</div><div class="sval sv-b" id="s-saldo">Rp 0</div></div>
           <div class="stat-card"><div class="slbl">Order Bulan Ini</div><div class="sval sv-o" id="s-order">0</div></div>
-          <div class="stat-card"><div class="slbl">Piutang Belum Lunas</div><div class="sval sv-o" id="s-piutang">Rp 0</div></div>
+          <div class="stat-card stat-link" onclick="bukaPiutang()" role="button" tabindex="0" title="Lihat daftar piutang"><div class="slbl">Piutang Belum Lunas</div><div class="sval sv-o" id="s-piutang">Rp 0</div></div>
         </div>
         <div class="card"><div class="chdr">Transaksi Terbaru</div><div id="db-recent"><div class="empty">Memuat...</div></div></div>
       </div>
@@ -281,12 +287,17 @@ try {
           <div id="fiktif-note" class="alert-i" style="display:none;">Kuitansi ini akan ditandai <strong>FIKTIF</strong> di sistem.</div>
         </div>
         <div class="card no-print">
-          <div class="chdr">Identitas Percetakan</div>
-          <div class="g2">
-            <div class="fg"><label>Nama Percetakan</label><input type="text" id="q-namapt" value="PRINTPRO DIGITAL"></div>
-            <div class="fg"><label>Kontak</label><input type="text" id="q-kontakpt" value="0813-1250-6025"></div>
+          <div class="chdr">Identitas Percetakan
+            <button class="btn btn-o btn-sm" id="btn-ident" type="button" onclick="toggleIdentitas()" aria-expanded="false">Ubah</button>
           </div>
-          <div class="fg"><label>Alamat</label><input type="text" id="q-alamatpt" value="Jl. Jend. Pol. Hoegeng Imam Santoso, Cimenyan II, Banjar"></div>
+          <div id="ident-sum" class="ident-sum"></div>
+          <div id="ident-form" style="display:none;">
+            <div class="g2">
+              <div class="fg"><label>Nama Percetakan</label><input type="text" id="q-namapt" value="PRINTPRO DIGITAL" oninput="identSum()"></div>
+              <div class="fg"><label>Kontak</label><input type="text" id="q-kontakpt" value="0813-1250-6025" oninput="identSum()"></div>
+            </div>
+            <div class="fg"><label>Alamat</label><input type="text" id="q-alamatpt" value="Jl. Jend. Pol. Hoegeng Imam Santoso, Cimenyan II, Banjar" oninput="identSum()"></div>
+          </div>
         </div>
         <div class="card no-print">
           <div class="chdr">Detail Kuitansi &amp; Pelanggan</div>
@@ -332,10 +343,13 @@ try {
           <div class="chdr">Catatan</div>
           <div class="fg"><textarea id="q-catatan">Barang yang sudah diambil tidak dapat dikembalikan lagi.</textarea></div>
         </div>
-        <div class="acts no-print">
-          <button class="btn btn-o" onclick="resetKuitansi()">Reset</button>
+        <div class="acts kwt-bar no-print">
+          <div class="kwt-bar-total"><span>Total</span><strong id="bar-total">Rp 0</strong></div>
+          <div class="kwt-bar-btns">
+          <button class="btn btn-o" onclick="tanyaReset()">Reset</button>
           <button class="btn btn-p" onclick="previewKuitansi()">👁 Preview</button>
           <button class="btn btn-b" id="btn-simpan-kwt" onclick="simpanKuitansi()">💾 Simpan</button>
+          </div>
         </div>
         <div id="rc-container" style="display:none;"></div>
         <div id="print-acts" class="acts no-print" style="display:none;">
@@ -551,7 +565,7 @@ try {
     </div><!-- /main -->
   </div><!-- /content-area -->
 </div><!-- /app -->
-<script src="js/config.js?v=20261030a"></script>
-<script src="js/app.js?v=20261030a"></script>
+<script src="js/config.js?v=20261121a"></script>
+<script src="js/app.js?v=20261121a"></script>
 </body>
 </html>
